@@ -48,11 +48,11 @@ public class AuthenticationServiceTests
     }
 
     [TestMethod]
-    public void TestCreateAndValidateAssertionSuccess()
+    public void TestCreateAndValidateTokenSuccess()
     {
         var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
         var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.NL888888881");
-        authenticationService.ValidateClientAssertion("EU.EORI.NL888888881", clientAssertion);
+        authenticationService.ValidateToken("EU.EORI.NL888888881", clientAssertion);
 
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(clientAssertion);
@@ -71,10 +71,19 @@ public class AuthenticationServiceTests
 
     [TestMethod]
     [ExpectedException(typeof(SecurityTokenInvalidAudienceException))]
-    public void TestWrongAudience()
+    public void TestInvalidAudience()
     {
         var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
         var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.FAIL");
-        authenticationService.ValidateClientAssertion("EU.EORI.NL888888881", clientAssertion);
+        authenticationService.ValidateToken("NL.KVK.FAIL", clientAssertion);
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(SecurityTokenInvalidIssuerException))]
+    public void TestInvalidIssuer()
+    {
+        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
+        var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.NL888888881");
+        authenticationService.ValidateToken("EU.EORI.FAIL", clientAssertion);
     }
 }

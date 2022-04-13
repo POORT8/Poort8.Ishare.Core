@@ -2,7 +2,7 @@
 
 namespace Poort8.Ishare.Core.Models;
 
-public class TrustedList
+public class TrustedCertificateAuthority
 {
     [JsonPropertyName("subject")]
     public string? Subject { get; set; }

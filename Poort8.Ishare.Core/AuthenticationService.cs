@@ -24,9 +24,9 @@ public class AuthenticationService : IAuthenticationService
         _clientId = configuration["ClientId"];
     }
 
-    public string CreateAccessToken(string audience, int expSeconds)
+    public string CreateAccessToken(string audience)
     {
-        return CreateClientAssertion(audience, expSeconds);
+        return CreateClientAssertion(audience, 3600);
     }
 
     public string CreateClientAssertion(string audience, int expSeconds = 30)
@@ -52,23 +52,23 @@ public class AuthenticationService : IAuthenticationService
         return tokenHandler.WriteToken(token);
     }
 
-    public void ValidateClientAssertion(string validIssuer, string clientAssertion)
+    public void ValidateAccessToken(string validIssuer, string accessToken)
     {
-        ValidateToken(validIssuer, clientAssertion);
+        ValidateToken(validIssuer, accessToken, 3600);
     }
 
-    public void ValidateToken(string validIssuer, string clientAssertion)
+    public void ValidateToken(string validIssuer, string token, int expSeconds = 30)
     {
         try
         {
             var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(clientAssertion);
-            var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c);
+            var jwtToken = handler.ReadJwtToken(token);
+            var chain = JsonSerializer.Deserialize<string[]>(jwtToken.Header.X5c);
             if (chain is null) { throw new Exception("Empty x5c header."); }
             var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
-            if (string.IsNullOrEmpty(token.Payload.Jti)) { throw new Exception("The 'jti' claim is missing from the client assertion."); }
-            if (token.Payload.Exp != token.Payload.Iat + 30) { throw new Exception("The 'exp' and 'iat' claims do not equal 'exp = iat + 30'."); }
+            if (string.IsNullOrEmpty(jwtToken.Payload.Jti)) { throw new Exception("The 'jti' claim is missing from the client assertion."); }
+            if (jwtToken.Payload.Exp != jwtToken.Payload.Iat + expSeconds) { throw new Exception("The 'exp' and 'iat' claims do not equal 'exp = iat + 30 or 3600'."); }
 
             var customValidations = new Dictionary<string, object>() { { "sub", validIssuer } };
 
@@ -90,11 +90,11 @@ public class AuthenticationService : IAuthenticationService
             };
 
             VerifyX5cChain(chain, signingCertificate);
-            handler.ValidateToken(clientAssertion, tokenValidationParameters, out SecurityToken validatedToken);
+            handler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
         }
         catch (Exception e)
         {
-            _logger.LogError("Token validation error, for client id {clientId} and assertion {assertion}. With message: {msg}", validIssuer, clientAssertion, e.Message);
+            _logger.LogError("Token validation error, for client id {clientId} and assertion {assertion}. With message: {msg}", validIssuer, token, e.Message);
             throw;
         }
     }

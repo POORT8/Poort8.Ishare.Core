@@ -5,6 +5,7 @@ using Poort8.Ishare.Core.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -42,7 +43,7 @@ public class SchemeOwnerService : ISchemeOwnerService
         {
             accessToken = await GetAccessTokenAtSchemeOwnerAsync();
 
-            if (accessToken is null) { throw new Exception("Did not receiver an access token from the scheme owner."); }
+            if (accessToken is null) { throw new Exception("Did not receive an access token from the scheme owner."); }
 
             var cacheOptions = new MemoryCacheEntryOptions()
                 .SetAbsoluteExpiration(TimeSpan.FromSeconds(accessToken.ExpiresIn - 60));
@@ -79,9 +80,9 @@ public class SchemeOwnerService : ISchemeOwnerService
         }
     }
 
-    private async Task<List<TrustedList>> GetTrustedListAsync()
+    private async Task<List<TrustedCertificateAuthority>> GetTrustedListAsync()
     {
-        if (!_memoryCache.TryGetValue("TrustedList", out List<TrustedList> trustedList))
+        if (!_memoryCache.TryGetValue("TrustedList", out List<TrustedCertificateAuthority> trustedList))
         {
             trustedList = await GetTrustedListAtSchemeOwnerAsync(); ;
 
@@ -94,7 +95,7 @@ public class SchemeOwnerService : ISchemeOwnerService
         return trustedList;
     }
 
-    private async Task<List<TrustedList>> GetTrustedListAtSchemeOwnerAsync()
+    private async Task<List<TrustedCertificateAuthority>> GetTrustedListAtSchemeOwnerAsync()
     {
         try
         {
@@ -110,10 +111,10 @@ public class SchemeOwnerService : ISchemeOwnerService
             var trustedListToken = handler.ReadJwtToken(response.TrustedListToken);
             var trustedListClaims = trustedListToken.Claims.Where(c => c.Type == "trusted_list").ToArray();
 
-            var trustedList = new List<TrustedList>();
+            var trustedList = new List<TrustedCertificateAuthority>();
             foreach (var claim in trustedListClaims)
             {
-                var trustedListClaim = JsonSerializer.Deserialize<TrustedList>(claim.Value);
+                var trustedListClaim = JsonSerializer.Deserialize<TrustedCertificateAuthority>(claim.Value);
                 if (trustedListClaim is not null) { trustedList.Add(trustedListClaim); }
             }
             return trustedList;
@@ -147,7 +148,7 @@ public class SchemeOwnerService : ISchemeOwnerService
         {
             var token = await GetAccessTokenAsync();
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var response = await _httpClient.GetFromJsonAsync<PartyResponse>($"/parties/{partyId}?certificate_subject_name={certificateSubject}");
+            var response = await _httpClient.GetFromJsonAsync<PartyResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
 
             if (response is null || response.PartyToken is null) { throw new Exception("Party response is null."); }
 
@@ -175,19 +176,25 @@ public class SchemeOwnerService : ISchemeOwnerService
 
         var trustedList = await GetTrustedListAsync();
 
-        var certificate = new X509Certificate2(Convert.FromBase64String(chain.Last()));
-
-        var trustedRoot = trustedList.Where(c => c.CertificateFingerprint == certificate.Thumbprint).FirstOrDefault();
-
-        if (trustedRoot is null ||
-            trustedRoot.Status is null ||
-            !trustedRoot.Status.Equals("granted", StringComparison.OrdinalIgnoreCase) ||
-            trustedRoot.Validity is null ||
-            !trustedRoot.Validity.Equals("valid", StringComparison.OrdinalIgnoreCase))
+        foreach (var chainCertificate in chain.Skip(1))
         {
-            _logger.LogError("Root certificate not in trusted list, or validity/status is invalid. Root certificate: {rootCertificate}", chain.Last());
-            //TODO: Certificate root (fingerprint) not in trusted list
-            //throw new Exception("Root certificate not trusted.");
+            var certificate = new X509Certificate2(Convert.FromBase64String(chainCertificate));
+
+            var sha256Thumbprint = GetSha256Thumbprint(certificate);
+
+            //NOTE: Find match on SHA1 or SHA256 certificate thumbprint
+            var trustedRoot = trustedList.Where(c =>
+                c.CertificateFingerprint == certificate.Thumbprint || c.CertificateFingerprint == sha256Thumbprint).FirstOrDefault();
+
+            if (trustedRoot is null ||
+                trustedRoot.Status is null ||
+                !trustedRoot.Status.Equals("granted", StringComparison.OrdinalIgnoreCase) ||
+                trustedRoot.Validity is null ||
+                !trustedRoot.Validity.Equals("valid", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("Root certificate not in trusted list, or validity/status is invalid. Root certificate: {rootCertificate}", chain.Last());
+                throw new Exception("Root certificate not trusted.");
+            }
         }
     }
 
@@ -210,6 +217,12 @@ public class SchemeOwnerService : ISchemeOwnerService
             _logger.LogError("Party info checks failed for party {partyId} and certificate subject {certificateSubject}", partyId, signingCertificate.Subject);
             throw new Exception("Party info checks failed.");
         }
+    }
+
+    private static string GetSha256Thumbprint(X509Certificate2 certificate)
+    {
+        var hasher = SHA256.Create();
+        return Convert.ToHexString(hasher.ComputeHash(certificate.GetRawCertData()));
     }
 
     private class TokenResponse
