@@ -18,14 +18,14 @@ public class SchemeOwnerService : ISchemeOwnerService
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _memoryCache;
     private readonly HttpClient _httpClient;
-    private readonly AuthenticationService _authenticationService;
+    private readonly IAuthenticationService _authenticationService;
 
     public SchemeOwnerService(
         ILogger<SchemeOwnerService> logger,
         IConfiguration configuration,
         IMemoryCache memoryCache,
         IHttpClientFactory httpClientFactory,
-        AuthenticationService authenticationService)
+        IAuthenticationService authenticationService)
     {
         _logger = logger;
         _configuration = configuration;
@@ -148,17 +148,20 @@ public class SchemeOwnerService : ISchemeOwnerService
         {
             var token = await GetAccessTokenAsync();
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var response = await _httpClient.GetFromJsonAsync<PartyResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
+            var response = await _httpClient.GetFromJsonAsync<PartiesResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
 
-            if (response is null || response.PartyToken is null) { throw new Exception("Party response is null."); }
+            if (response is null || response.PartiesToken is null) { throw new Exception("Parties response is null."); }
 
-            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartyToken);
+            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartiesToken);
 
             var handler = new JwtSecurityTokenHandler();
-            var partyToken = handler.ReadJwtToken(response.PartyToken);
-            var partyTokenClaim = partyToken.Claims.Where(c => c.Type == "party_info").First();
-            var partyInfo = JsonSerializer.Deserialize<PartyInfo>(partyTokenClaim.Value);
-            return partyInfo ?? throw new Exception("Received empty party info list.");
+            var partiesToken = handler.ReadJwtToken(response.PartiesToken);
+            var partiesTokenClaim = partiesToken.Claims.Where(c => c.Type == "parties_info").First();
+            var partiesInfoClaim = JsonSerializer.Deserialize<PartiesClaim>(partiesTokenClaim.Value);
+
+            if (partiesInfoClaim is null || partiesInfoClaim.Count > 1 || partiesInfoClaim.PartiesInfo is null) { throw new Exception("Received invalid parties info."); }
+
+            return partiesInfoClaim.PartiesInfo.First() ?? throw new Exception("Received empty party info list.");
         }
         catch (Exception e)
         {
@@ -243,9 +246,18 @@ public class SchemeOwnerService : ISchemeOwnerService
         public string? TrustedListToken { get; set; }
     }
 
-    private class PartyResponse
+    private class PartiesResponse
     {
-        [JsonPropertyName("party_token")]
-        public string? PartyToken { get; set; }
+        [JsonPropertyName("parties_token")]
+        public string? PartiesToken { get; set; }
+    }
+
+    private class PartiesClaim
+    {
+        [JsonPropertyName("count")]
+        public int Count { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<PartyInfo>? PartiesInfo { get; set; }
     }
 }
