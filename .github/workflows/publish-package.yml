@@ -38,5 +38,4 @@ jobs:
       name: Publish to GitHub
       with:
         name: Poort8.Ishare.Core.${{github.event.release.tag_name}}
-        path: packages/
-        
+        path: "**/*.nupkg"
