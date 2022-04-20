@@ -57,7 +57,7 @@ public class AuthenticationService : IAuthenticationService
         ValidateToken(validIssuer, accessToken, 3600);
     }
 
-    public void ValidateToken(string validIssuer, string token, int expSeconds = 30)
+    public void ValidateToken(string validIssuer, string token, int expSeconds = 30, bool verifyChain = false)
     {
         try
         {
@@ -89,7 +89,8 @@ public class AuthenticationService : IAuthenticationService
                 //TODO: ValidateTokenReplay
             };
 
-            VerifyX5cChain(chain, signingCertificate);
+            if (verifyChain) { VerifyX5cChain(chain, signingCertificate); }
+            
             handler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
         }
         catch (Exception e)
