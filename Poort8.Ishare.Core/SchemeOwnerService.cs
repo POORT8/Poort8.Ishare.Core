@@ -105,7 +105,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
             if (response is null || response.TrustedListToken is null) { throw new Exception("TrustedList response is null."); }
 
-            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.TrustedListToken);
+            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.TrustedListToken, 30, true);
 
             var handler = new JwtSecurityTokenHandler();
             var trustedListToken = handler.ReadJwtToken(response.TrustedListToken);
@@ -152,7 +152,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
             if (response is null || response.PartiesToken is null) { throw new Exception("Parties response is null."); }
 
-            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartiesToken);
+            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartiesToken, 30, true);
 
             var handler = new JwtSecurityTokenHandler();
             var partiesToken = handler.ReadJwtToken(response.PartiesToken);
