@@ -9,5 +9,6 @@ public static class ServicesConfiguration
         services.AddSingleton<ICertificateProvider, CertificateProvider>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<ISchemeOwnerService, SchemeOwnerService>();
+        services.AddSingleton<IPolicyEnforcementPoint, PolicyEnforcementPoint>();
     }
 }
