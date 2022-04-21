@@ -61,7 +61,7 @@ public class AuthenticationService : IAuthenticationService
             throw new Exception("Invalid authorization header.");
         }
 
-        ValidateAccessToken(validIssuer, authorizationHeader[0]);
+        ValidateAccessToken(validIssuer, authorizationHeader[0].Replace("Bearer ", ""));
     }
 
     public void ValidateAccessToken(string validIssuer, string accessToken)
