@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -52,12 +53,23 @@ public class AuthenticationService : IAuthenticationService
         return tokenHandler.WriteToken(token);
     }
 
-    public void ValidateAccessToken(string validIssuer, string accessToken)
+    public void ValidateAuthorizationHeader(string validIssuer, StringValues authorizationHeader)
     {
-        ValidateToken(validIssuer, accessToken, 3600);
+        if (authorizationHeader.Count != 1 || !authorizationHeader[0].StartsWith("Bearer "))
+        {
+            _logger.LogError("Invalid authorization header: {authorizationHeader}", authorizationHeader);
+            throw new Exception("Invalid authorization header.");
+        }
+
+        ValidateAccessToken(validIssuer, authorizationHeader[0]);
     }
 
-    public void ValidateToken(string validIssuer, string token, int expSeconds = 30, bool verifyChain = false)
+    public void ValidateAccessToken(string validIssuer, string accessToken)
+    {
+        ValidateToken(validIssuer, accessToken, 3600, false, false);
+    }
+
+    public void ValidateToken(string validIssuer, string token, int expSeconds = 30, bool verifyChain = true, bool validateAudienceWithClientId = true)
     {
         try
         {
@@ -78,7 +90,7 @@ public class AuthenticationService : IAuthenticationService
                 ValidTypes = new List<string>() { "JWT" },
                 ValidateIssuer = true,
                 ValidIssuer = validIssuer,
-                ValidateAudience = true,
+                ValidateAudience = validateAudienceWithClientId,
                 ValidAudience = _clientId,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new X509SecurityKey(signingCertificate),
