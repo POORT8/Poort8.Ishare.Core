@@ -37,49 +37,6 @@ public class SchemeOwnerService : ISchemeOwnerService
         _authenticationService = authenticationService;
     }
 
-    private async Task<string> GetAccessTokenAsync()
-    {
-        if (!_memoryCache.TryGetValue("AccessToken", out TokenResponse accessToken))
-        {
-            accessToken = await GetAccessTokenAtSchemeOwnerAsync();
-
-            if (accessToken is null) { throw new Exception("Did not receive an access token from the scheme owner."); }
-
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(accessToken.ExpiresIn - 60));
-
-            _memoryCache.Set("AccessToken", accessToken, cacheOptions);
-        }
-
-        return accessToken.AccessToken ?? throw new Exception("AccessToken is null.");
-    }
-
-    private async Task<TokenResponse> GetAccessTokenAtSchemeOwnerAsync()
-    {
-        try
-        {
-            var clientAssertion = _authenticationService.CreateClientAssertion(_configuration["SchemeOwnerIdentifier"]);
-            var formData = new[]
-            {
-                    new KeyValuePair<string, string>("grant_type", "client_credentials"),
-                    new KeyValuePair<string, string>("scope", "iSHARE"),
-                    new KeyValuePair<string, string>("client_id", _configuration["ClientId"]),
-                    new KeyValuePair<string, string>("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"),
-                    new KeyValuePair<string, string>("client_assertion", clientAssertion)
-                };
-
-            var response = await _httpClient.PostAsync("/connect/token", new FormUrlEncodedContent(formData));
-            response.EnsureSuccessStatusCode();
-            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
-            return tokenResponse ?? throw new Exception("TokenResponse is null.");
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("Could not get access token from scheme owner: {msg}", e.Message);
-            throw;
-        }
-    }
-
     private async Task<List<TrustedCertificateAuthority>> GetTrustedListAsync()
     {
         if (!_memoryCache.TryGetValue("TrustedList", out List<TrustedCertificateAuthority> trustedList))
@@ -99,7 +56,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         try
         {
-            var token = await GetAccessTokenAsync();
+            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], _configuration["SchemeOwnerTokenUrl"]);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<TrustedListResponse>("/trusted_list");
 
@@ -146,7 +103,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         try
         {
-            var token = await GetAccessTokenAsync();
+            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], _configuration["SchemeOwnerTokenUrl"]);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<PartiesResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
 
