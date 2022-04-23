@@ -9,4 +9,5 @@ public interface IAuthenticationService
     void ValidateAuthorizationHeader(string validIssuer, StringValues authorizationHeader);
     void ValidateAccessToken(string validIssuer, string accessToken);
     void ValidateToken(string validIssuer, string token, int expSeconds = 30, bool verifyChain = true, bool validateAudienceWithClientId = true);
+    Task<string> GetAccessTokenAtPartyAsync(string partyId, string tokenUrl);
 }

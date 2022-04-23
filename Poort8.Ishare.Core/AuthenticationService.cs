@@ -1,8 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using Poort8.Ishare.Core.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -12,15 +15,23 @@ namespace Poort8.Ishare.Core;
 public class AuthenticationService : IAuthenticationService
 {
     private readonly ILogger<AuthenticationService> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly HttpClient _httpClient;
+    private readonly IMemoryCache _memoryCache;
     private readonly ICertificateProvider _certificateProvider;
     private readonly string _clientId;
 
     public AuthenticationService(
         ILogger<AuthenticationService> logger,
         IConfiguration configuration,
+        IHttpClientFactory httpClientFactory,
+        IMemoryCache memoryCache,
         ICertificateProvider certificateProvider)
     {
         _logger = logger;
+        _configuration = configuration;
+        _httpClient = httpClientFactory.CreateClient(nameof(AuthenticationService));
+        _memoryCache = memoryCache;
         _certificateProvider = certificateProvider;
         _clientId = configuration["ClientId"];
     }
@@ -108,6 +119,49 @@ public class AuthenticationService : IAuthenticationService
         catch (Exception e)
         {
             _logger.LogError("Token validation error, for client id {clientId} and assertion {assertion}. With message: {msg}", validIssuer, token, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<string> GetAccessTokenAtPartyAsync(string partyId, string tokenUrl)
+    {
+        if (!_memoryCache.TryGetValue($"AccessToken-{partyId}", out TokenResponse accessToken))
+        {
+            accessToken = await GetAccessTokenAsync(partyId, tokenUrl);
+
+            if (accessToken is null) { throw new Exception($"Did not receive an access token from {partyId}."); }
+
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(accessToken.ExpiresIn - 60));
+
+            _memoryCache.Set($"AccessToken-{partyId}", accessToken, cacheOptions);
+        }
+
+        return accessToken.AccessToken ?? throw new Exception("AccessToken is null.");
+    }
+
+    private async Task<TokenResponse> GetAccessTokenAsync(string partyId, string tokenUrl)
+    {
+        try
+        {
+            var clientAssertion = CreateClientAssertion(partyId);
+            var formData = new[]
+            {
+                    new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                    new KeyValuePair<string, string>("scope", "iSHARE"),
+                    new KeyValuePair<string, string>("client_id", _configuration["ClientId"]),
+                    new KeyValuePair<string, string>("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"),
+                    new KeyValuePair<string, string>("client_assertion", clientAssertion)
+            };
+
+            var response = await _httpClient.PostAsync(tokenUrl, new FormUrlEncodedContent(formData));
+            response.EnsureSuccessStatusCode();
+            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+            return tokenResponse ?? throw new Exception("TokenResponse is null.");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Could not get access token from {partyId}: {msg}", partyId, e.Message);
             throw;
         }
     }

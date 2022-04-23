@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -6,6 +7,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Poort8.Ishare.Core.Tests;
@@ -16,6 +18,8 @@ public class AuthenticationServiceTests
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     private static Mock<IConfiguration> ConfigMock;
     private static Mock<ILogger<AuthenticationService>> LoggerMock;
+    private static Mock<IHttpClientFactory> HttpClientFactoryMock;
+    private static Mock<IMemoryCache> MemoryCacheMock;
     private static X509Certificate2 TestCertificate;
     private static X509Certificate2 TestRootCertificate;
     private static Mock<ICertificateProvider> CertificateProviderMock;
@@ -30,6 +34,9 @@ public class AuthenticationServiceTests
             .Returns("EU.EORI.NL888888881");
 
         LoggerMock = new Mock<ILogger<AuthenticationService>>();
+
+        HttpClientFactoryMock = new Mock<IHttpClientFactory>();
+        MemoryCacheMock = new Mock<IMemoryCache>();
 
         TestCertificate = new X509Certificate2("poort8.ishare.common.tests.pfx", "poort8.ishare.common.tests");
         TestRootCertificate = new X509Certificate2("poort8.ishare.common.tests.root.pfx", "poort8.ishare.common.tests");
@@ -50,7 +57,7 @@ public class AuthenticationServiceTests
     [TestMethod]
     public void TestCreateAndValidateTokenSuccess()
     {
-        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
+        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
         var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.NL888888881");
         authenticationService.ValidateToken("EU.EORI.NL888888881", clientAssertion);
 
@@ -73,7 +80,7 @@ public class AuthenticationServiceTests
     [ExpectedException(typeof(SecurityTokenInvalidAudienceException))]
     public void TestInvalidAudience()
     {
-        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
+        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
         var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.FAIL");
         authenticationService.ValidateToken("NL.KVK.FAIL", clientAssertion);
     }
@@ -82,7 +89,7 @@ public class AuthenticationServiceTests
     [ExpectedException(typeof(SecurityTokenInvalidIssuerException))]
     public void TestInvalidIssuer()
     {
-        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, CertificateProviderMock.Object);
+        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
         var clientAssertion = authenticationService.CreateClientAssertion("EU.EORI.NL888888881");
         authenticationService.ValidateToken("EU.EORI.FAIL", clientAssertion);
     }
