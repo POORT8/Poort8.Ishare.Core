@@ -38,14 +38,29 @@ public class AuthenticationService : IAuthenticationService
 
     public string CreateAccessToken(string audience)
     {
-        return CreateClientAssertion(audience, 3600);
+        return CreateToken(audience, 3600);
+    }
+
+    public string CreateInformationToken(string audience, List<Claim> additionalClaims)
+    {
+        return CreateToken(audience, additionalClaims: additionalClaims);
     }
 
     public string CreateClientAssertion(string audience, int expSeconds = 30)
     {
+        return CreateToken(audience, expSeconds);
+    }
+
+    private string CreateToken(string audience, int expSeconds = 30, List<Claim> additionalClaims = null)
+    {
         var claims = new ClaimsIdentity();
         claims.AddClaim(new Claim("sub", _clientId));
         claims.AddClaim(new Claim("jti", Guid.NewGuid().ToString()));
+
+        if (additionalClaims != null)
+        {
+            claims.AddClaims(additionalClaims);
+        }
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateJwtSecurityToken(

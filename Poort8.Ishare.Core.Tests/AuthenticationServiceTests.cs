@@ -7,8 +7,11 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 namespace Poort8.Ishare.Core.Tests;
 
@@ -74,6 +77,30 @@ public class AuthenticationServiceTests
         Assert.IsNotNull(token.Payload.Iat);
         Assert.AreEqual(token.Payload.Iat, token.Payload.Nbf);
         Assert.AreEqual(token.Payload.Exp, token.Payload.Iat + 30);
+    }
+
+    [TestMethod]
+    public void TestCreateAndValidateInformationTokenSuccess()
+    {
+        var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
+        var obje = new { test = "testValue" };
+        var additionalClaims = new List<Claim> { new Claim("testClaim", JsonSerializer.Serialize(obje), JsonClaimValueTypes.Json) };
+        var informationToken = authenticationService.CreateInformationToken(null, additionalClaims);
+        authenticationService.ValidateToken("EU.EORI.NL888888881", informationToken, 30, true, false);
+
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(informationToken);
+
+        Assert.AreEqual("RS256", token.Header.Alg);
+        Assert.AreEqual("JWT", token.Header.Typ);
+        Assert.IsNotNull(token.Header.X5c);
+        Assert.IsNotNull(token.Payload.Iss);
+        Assert.AreEqual(token.Payload.Iss, token.Payload.Sub);
+        Assert.IsNotNull(token.Payload.Jti);
+        Assert.IsNotNull(token.Payload.Iat);
+        Assert.AreEqual(token.Payload.Iat, token.Payload.Nbf);
+        Assert.AreEqual(token.Payload.Exp, token.Payload.Iat + 30);
+        Assert.AreEqual(token.Claims.Where(cl => cl.Type == additionalClaims.First().Type).First().Value, additionalClaims.First().Value);
     }
 
     [TestMethod]
