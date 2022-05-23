@@ -56,7 +56,8 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         try
         {
-            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], _configuration["SchemeOwnerTokenUrl"]);
+            var tokenUri = new Uri(new Uri(_configuration["SchemeOwnerUrl"]), "/connect/token");
+            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], tokenUri.AbsoluteUri);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<TrustedListResponse>("/trusted_list");
 
