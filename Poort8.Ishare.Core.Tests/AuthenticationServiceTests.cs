@@ -80,7 +80,7 @@ public class AuthenticationServiceTests
     }
 
     [TestMethod]
-    public void TestCreateAndValidateInformationTokenSuccess()
+    public void TestCreateAndValidateTokenWithClaimsSuccess()
     {
         var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
         var obje = new { test = "testValue" };
