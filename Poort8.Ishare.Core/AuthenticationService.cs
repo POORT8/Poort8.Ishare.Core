@@ -41,7 +41,7 @@ public class AuthenticationService : IAuthenticationService
         return CreateToken(audience, 3600);
     }
 
-    public string CreateInformationToken(string audience, List<Claim> additionalClaims)
+    public string CreateTokenWithClaims(string? audience, IReadOnlyList<Claim> additionalClaims)
     {
         return CreateToken(audience, additionalClaims: additionalClaims);
     }
@@ -51,13 +51,13 @@ public class AuthenticationService : IAuthenticationService
         return CreateToken(audience, expSeconds);
     }
 
-    private string CreateToken(string audience, int expSeconds = 30, List<Claim> additionalClaims = null)
+    private string CreateToken(string? audience, int expSeconds = 30, IReadOnlyList<Claim>? additionalClaims = null)
     {
         var claims = new ClaimsIdentity();
         claims.AddClaim(new Claim("sub", _clientId));
         claims.AddClaim(new Claim("jti", Guid.NewGuid().ToString()));
 
-        if (additionalClaims != null)
+        if (additionalClaims is not null)
         {
             claims.AddClaims(additionalClaims);
         }

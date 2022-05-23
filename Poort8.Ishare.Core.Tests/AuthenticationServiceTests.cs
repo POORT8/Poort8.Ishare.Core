@@ -85,7 +85,7 @@ public class AuthenticationServiceTests
         var authenticationService = new AuthenticationService(LoggerMock.Object, ConfigMock.Object, HttpClientFactoryMock.Object, MemoryCacheMock.Object, CertificateProviderMock.Object);
         var obje = new { test = "testValue" };
         var additionalClaims = new List<Claim> { new Claim("testClaim", JsonSerializer.Serialize(obje), JsonClaimValueTypes.Json) };
-        var informationToken = authenticationService.CreateInformationToken(null, additionalClaims);
+        var informationToken = authenticationService.CreateTokenWithClaims(null, additionalClaims);
         authenticationService.ValidateToken("EU.EORI.NL888888881", informationToken, 30, true, false);
 
         var handler = new JwtSecurityTokenHandler();
