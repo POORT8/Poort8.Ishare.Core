@@ -107,8 +107,7 @@ public class AuthenticationService : IAuthenticationService
 
             if (string.IsNullOrEmpty(jwtToken.Payload.Jti)) { throw new Exception("The 'jti' claim is missing from the client assertion."); }
             if (jwtToken.Payload.Exp != jwtToken.Payload.Iat + expSeconds) { throw new Exception("The 'exp' and 'iat' claims do not equal 'exp = iat + 30 or 3600'."); }
-
-            var customValidations = new Dictionary<string, object>() { { "sub", validIssuer } };
+            if (jwtToken.Payload.Iss != jwtToken.Payload.Sub) { throw new Exception("The 'iss' claim is not equal to the 'sub' claim."); }
 
             var tokenValidationParameters = new TokenValidationParameters()
             {
@@ -122,7 +121,6 @@ public class AuthenticationService : IAuthenticationService
                 IssuerSigningKey = new X509SecurityKey(signingCertificate),
                 ValidateLifetime = true,
                 RequireExpirationTime = true,
-                PropertyBag = customValidations,
                 ClockSkew = TimeSpan.FromSeconds(30)
                 //TODO: ValidateTokenReplay
             };
