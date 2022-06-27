@@ -29,8 +29,70 @@ public class PolicyEnforcementPointTests
     {
         var policyEnforcementPoint = new PolicyEnforcementPoint(LoggerMock.Object, AuthenticationServiceMock.Object);
 
-        var permit = policyEnforcementPoint.VerifyDelegationTokenPermit(_authorizationRegistryId, _delegationToken);
-
+        var permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "DVU",
+            "2.0.0",
+            "EU.EORI.NL888888882",
+            "P4 Portal",
+            "EANtest123");
         Assert.IsTrue(permit);
+    }
+
+    [TestMethod]
+    public void TestVerifyDelegationEvidencePermitFails()
+    {
+        var policyEnforcementPoint = new PolicyEnforcementPoint(LoggerMock.Object, AuthenticationServiceMock.Object);
+
+        var permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "invalid",
+            "2.0.0",
+            "EU.EORI.NL888888882",
+            "P4 Portal",
+            "EANtest123");
+        Assert.IsFalse(permit);
+
+        permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "DVU",
+            "3.0.0",
+            "EU.EORI.NL888888882",
+            "P4 Portal",
+            "EANtest123");
+        Assert.IsFalse(permit);
+
+        permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "DVU",
+            "2.0.0",
+            "invalid",
+            "P4 Portal",
+            "EANtest123");
+        Assert.IsFalse(permit);
+
+        permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "DVU",
+            "2.0.0",
+            "EU.EORI.NL888888882",
+            "invalid",
+            "EANtest123");
+        Assert.IsFalse(permit);
+
+        permit = policyEnforcementPoint.VerifyDelegationTokenPermit(
+            _authorizationRegistryId,
+            _delegationToken,
+            "DVU",
+            "2.0.0",
+            "EU.EORI.NL888888882",
+            "P4 Portal",
+            "invalid");
+        Assert.IsFalse(permit);
     }
 }
