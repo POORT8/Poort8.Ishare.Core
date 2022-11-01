@@ -21,47 +21,22 @@ public class PolicyEnforcementPoint : IPolicyEnforcementPoint
     public bool VerifyDelegationTokenPermit(
         string authorizationRegistryId,
         string delegationToken,
-        string playbook,
-        string minimalPlaybookVersion,
         string? accessTokenAud = null,
         string? resourceType = null,
         string? resourceIdentifier = null)
     {
         _authenticationService.ValidateToken(authorizationRegistryId, delegationToken, 30, true, false);
-        return VerifyPermit(delegationToken, playbook, minimalPlaybookVersion, accessTokenAud, resourceType, resourceIdentifier);
+        return VerifyPermit(delegationToken, accessTokenAud, resourceType, resourceIdentifier);
     }
 
     private bool VerifyPermit(
         string delegationToken,
-        string playbook,
-        string minimalPlaybookVersion,
         string? accessTokenAud,
         string? resourceType,
         string? resourceIdentifier)
     {
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(delegationToken);
-
-        var playbookInClaims = jwtToken.Payload.TryGetValue("playbook", out object? playbookClaim);
-        if (!playbookInClaims || playbookClaim is null || !Equals(playbookClaim, playbook))
-        {
-            _logger.LogWarning("Invalid playbook claim in delegationToken {delegationToken}, should be {playbook}", delegationToken, playbook);
-            return false;
-        }
-
-        var playbookVersionInClaims = jwtToken.Payload.TryGetValue("playbookVersion", out object? playbookVersionClaim);
-        try
-        {
-            if (!playbookVersionInClaims || playbookVersionClaim is null || new Version((string)playbookVersionClaim) < new Version(minimalPlaybookVersion))
-            {
-                throw new Exception("Invalid playbook version claim.");
-            }
-        }
-        catch (Exception)
-        {
-            _logger.LogWarning("Invalid playbook version claim in delegationToken {delegationToken}, should be greater or equal than {minimalPlaybookVersion}", delegationToken, minimalPlaybookVersion);
-            return false;
-        }
         
         jwtToken.Payload.TryGetValue("delegationEvidence", out object? delegationEvidenceClaim);
         var delegationEvidence = JsonSerializer.Deserialize<DelegationEvidence>(delegationEvidenceClaim?.ToString()!);

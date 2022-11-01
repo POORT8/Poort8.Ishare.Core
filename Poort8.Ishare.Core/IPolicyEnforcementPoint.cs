@@ -2,5 +2,5 @@
 
 public interface IPolicyEnforcementPoint
 {
-    bool VerifyDelegationTokenPermit(string authorizationRegistryId, string delegationToken, string playbook, string minimalPlaybookVersion, string? accessTokenAud = null, string? resourceType = null, string? resourceIdentifier = null);
+    bool VerifyDelegationTokenPermit(string authorizationRegistryId, string delegationToken, string? accessTokenAud = null, string? resourceType = null, string? resourceIdentifier = null);
 }
