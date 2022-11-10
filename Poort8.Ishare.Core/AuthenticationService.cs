@@ -62,7 +62,7 @@ public class AuthenticationService : IAuthenticationService
             claims.AddClaims(additionalClaims);
         }
 
-        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenHandler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = tokenHandler.CreateJwtSecurityToken(
             issuer: _clientId,
             audience: audience,
@@ -99,7 +99,7 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var jwtToken = handler.ReadJwtToken(token);
             var chain = JsonSerializer.Deserialize<string[]>(jwtToken.Header.X5c);
             if (chain is null) { throw new Exception("Empty x5c header."); }
@@ -126,7 +126,7 @@ public class AuthenticationService : IAuthenticationService
             };
 
             if (verifyChain) { VerifyX5cChain(chain, signingCertificate); }
-            
+
             handler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
         }
         catch (Exception e)

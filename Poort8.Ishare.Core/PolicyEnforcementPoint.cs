@@ -35,9 +35,9 @@ public class PolicyEnforcementPoint : IPolicyEnforcementPoint
         string? resourceType,
         string? resourceIdentifier)
     {
-        var handler = new JwtSecurityTokenHandler();
+        var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var jwtToken = handler.ReadJwtToken(delegationToken);
-        
+
         jwtToken.Payload.TryGetValue("delegationEvidence", out object? delegationEvidenceClaim);
         var delegationEvidence = JsonSerializer.Deserialize<DelegationEvidence>(delegationEvidenceClaim?.ToString()!);
 

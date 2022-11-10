@@ -1,5 +1,5 @@
-﻿using System.Security.Claims;
-using Microsoft.Extensions.Primitives;
+﻿using Microsoft.Extensions.Primitives;
+using System.Security.Claims;
 
 namespace Poort8.Ishare.Core;
 
