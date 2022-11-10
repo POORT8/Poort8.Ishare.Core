@@ -65,7 +65,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
             _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.TrustedListToken, 30, true);
 
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var trustedListToken = handler.ReadJwtToken(response.TrustedListToken);
             var trustedListClaims = trustedListToken.Claims.Where(c => c.Type == "trusted_list").ToArray();
 
@@ -113,7 +113,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
             _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartiesToken, 30, true);
 
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var partiesToken = handler.ReadJwtToken(response.PartiesToken);
             var partiesTokenClaim = partiesToken.Claims.Where(c => c.Type == "parties_info").First();
             var partiesInfoClaim = JsonSerializer.Deserialize<PartiesClaim>(partiesTokenClaim.Value);
@@ -131,7 +131,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     public async Task VerifyCertificateIsTrustedAsync(string clientAssertion)
     {
-        var handler = new JwtSecurityTokenHandler();
+        var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
         var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c);
         if (chain is null) { throw new Exception("Empty x5c header."); }
@@ -162,7 +162,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     public async Task VerifyPartyAsync(string partyId, string clientAssertion)
     {
-        var handler = new JwtSecurityTokenHandler();
+        var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
         var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c);
         if (chain is null) { throw new Exception("Empty x5c header."); }
