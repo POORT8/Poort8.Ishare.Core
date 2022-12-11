@@ -25,7 +25,7 @@ public class AuthenticationService : IAuthenticationService
         ILogger<AuthenticationService> logger,
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory,
-        IAppCache memoryCache,
+        IAppCache? memoryCache,
         ICertificateProvider certificateProvider)
     {
         _logger = logger;

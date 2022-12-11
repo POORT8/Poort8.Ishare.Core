@@ -23,7 +23,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     public SchemeOwnerService(
         ILogger<SchemeOwnerService> logger,
         IConfiguration configuration,
-        IAppCache memoryCache,
+        IAppCache? memoryCache,
         IHttpClientFactory httpClientFactory,
         IAuthenticationService authenticationService)
     {
