@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Caching.Memory;
+using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -22,7 +22,7 @@ public class AuthenticationServiceTests
     private static Mock<IConfiguration> ConfigMock;
     private static Mock<ILogger<AuthenticationService>> LoggerMock;
     private static Mock<IHttpClientFactory> HttpClientFactoryMock;
-    private static Mock<IMemoryCache> MemoryCacheMock;
+    private static Mock<IAppCache> MemoryCacheMock;
     private static X509Certificate2 TestCertificate;
     private static X509Certificate2 TestRootCertificate;
     private static Mock<ICertificateProvider> CertificateProviderMock;
@@ -39,7 +39,7 @@ public class AuthenticationServiceTests
         LoggerMock = new Mock<ILogger<AuthenticationService>>();
 
         HttpClientFactoryMock = new Mock<IHttpClientFactory>();
-        MemoryCacheMock = new Mock<IMemoryCache>();
+        MemoryCacheMock = new Mock<IAppCache>();
 
         TestCertificate = new X509Certificate2("poort8.ishare.common.tests.pfx", "poort8.ishare.common.tests");
         TestRootCertificate = new X509Certificate2("poort8.ishare.common.tests.root.pfx", "poort8.ishare.common.tests");

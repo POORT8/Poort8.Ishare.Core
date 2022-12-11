@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -17,7 +17,7 @@ public class AuthenticationService : IAuthenticationService
     private readonly ILogger<AuthenticationService> _logger;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
-    private readonly IMemoryCache _memoryCache;
+    private readonly IAppCache? _memoryCache;
     private readonly ICertificateProvider _certificateProvider;
     private readonly string _clientId;
 
@@ -25,7 +25,7 @@ public class AuthenticationService : IAuthenticationService
         ILogger<AuthenticationService> logger,
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory,
-        IMemoryCache memoryCache,
+        IAppCache memoryCache,
         ICertificateProvider certificateProvider)
     {
         _logger = logger;
@@ -138,19 +138,26 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task<string> GetAccessTokenAtPartyAsync(string partyId, string tokenUrl)
     {
-        if (!_memoryCache.TryGetValue($"AccessToken-{partyId}", out TokenResponse accessToken))
+        string accessToken;
+        if (_memoryCache == null)
         {
-            accessToken = await GetAccessTokenAsync(partyId, tokenUrl);
-
-            if (accessToken is null) { throw new Exception($"Did not receive an access token from {partyId}."); }
-
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(accessToken.ExpiresIn - 60));
-
-            _memoryCache.Set($"AccessToken-{partyId}", accessToken, cacheOptions);
+            var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
+            if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
+            accessToken = tokenResponse.AccessToken!;
+        }
+        else
+        {
+            accessToken = await _memoryCache.GetOrAddAsync($"AccessToken-{partyId}", async entry =>
+            {
+                _logger.LogInformation("Fetched token from cache for party {partyId}", partyId);
+                var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
+                if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60);
+                return tokenResponse.AccessToken!;
+            });
         }
 
-        return accessToken.AccessToken ?? throw new Exception("AccessToken is null.");
+        return accessToken;
     }
 
     private async Task<TokenResponse> GetAccessTokenAsync(string partyId, string tokenUrl)
@@ -170,6 +177,8 @@ public class AuthenticationService : IAuthenticationService
             var response = await _httpClient.PostAsync(tokenUrl, new FormUrlEncodedContent(formData));
             response.EnsureSuccessStatusCode();
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+
+            _logger.LogInformation("Received token from party {party}", partyId);
             return tokenResponse ?? throw new Exception("TokenResponse is null.");
         }
         catch (Exception e)

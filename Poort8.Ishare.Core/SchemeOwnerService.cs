@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Poort8.Ishare.Core.Models;
@@ -16,14 +16,14 @@ public class SchemeOwnerService : ISchemeOwnerService
 {
     private readonly ILogger<SchemeOwnerService> _logger;
     private readonly IConfiguration _configuration;
-    private readonly IMemoryCache _memoryCache;
+    private readonly IAppCache? _memoryCache;
     private readonly HttpClient _httpClient;
     private readonly IAuthenticationService _authenticationService;
 
     public SchemeOwnerService(
         ILogger<SchemeOwnerService> logger,
         IConfiguration configuration,
-        IMemoryCache memoryCache,
+        IAppCache memoryCache,
         IHttpClientFactory httpClientFactory,
         IAuthenticationService authenticationService)
     {
@@ -39,14 +39,19 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     private async Task<List<TrustedCertificateAuthority>> GetTrustedListAsync()
     {
-        if (!_memoryCache.TryGetValue("TrustedList", out List<TrustedCertificateAuthority> trustedList))
+        List<TrustedCertificateAuthority> trustedList;
+        if (_memoryCache == null)
         {
-            trustedList = await GetTrustedListAtSchemeOwnerAsync(); ;
-
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromDays(1));
-
-            _memoryCache.Set("TrustedList", trustedList, cacheOptions);
+            trustedList = await GetTrustedListAtSchemeOwnerAsync();
+        }
+        else
+        {
+            _logger.LogInformation("Fetched trusted list from cache.");
+            trustedList = await _memoryCache.GetOrAddAsync("TrustedList", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+                return await GetTrustedListAtSchemeOwnerAsync();
+            });
         }
 
         return trustedList;
@@ -76,6 +81,8 @@ public class SchemeOwnerService : ISchemeOwnerService
                 var trustedListClaim = JsonSerializer.Deserialize<TrustedCertificateAuthority>(claim.Value);
                 if (trustedListClaim is not null) { trustedList.Add(trustedListClaim); }
             }
+
+            _logger.LogInformation("Received trusted list from scheme owener.");
             return trustedList;
         }
         catch (Exception e)
@@ -87,18 +94,22 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     private async Task<PartyInfo> GetPartyAsync(string partyId, string certificateSubject)
     {
-        var cacheKey = $"Party-{partyId}-{certificateSubject}";
-        if (!_memoryCache.TryGetValue(cacheKey, out PartyInfo party))
+        PartyInfo partyInfo;
+        if (_memoryCache == null)
         {
-            party = await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject);
-
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(1));
-
-            _memoryCache.Set(cacheKey, party, cacheOptions);
+            partyInfo = await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject);
+        }
+        else
+        {
+            _logger.LogInformation("Fetched party info from cache for party {partyId}", partyId);
+            partyInfo = await _memoryCache.GetOrAddAsync($"Party-{partyId}-{certificateSubject}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+                return await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject);
+            });
         }
 
-        return party;
+        return partyInfo;
     }
 
     private async Task<PartyInfo> GetPartyAtSchemeOwnerAsync(string partyId, string certificateSubject)
@@ -122,6 +133,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
             if (partiesInfoClaim is null || partiesInfoClaim.Count > 1 || partiesInfoClaim.PartiesInfo is null) { throw new Exception("Received invalid parties info."); }
 
+            _logger.LogInformation("Received party info for party {party}", partyId);
             return partiesInfoClaim.PartiesInfo.First() ?? throw new Exception("Received empty party info list.");
         }
         catch (Exception e)
