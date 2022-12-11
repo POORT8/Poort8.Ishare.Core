@@ -46,7 +46,6 @@ public class SchemeOwnerService : ISchemeOwnerService
         }
         else
         {
-            _logger.LogInformation("Fetched trusted list from cache.");
             trustedList = await _memoryCache.GetOrAddAsync("TrustedList", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
@@ -101,7 +100,6 @@ public class SchemeOwnerService : ISchemeOwnerService
         }
         else
         {
-            _logger.LogInformation("Fetched party info from cache for party {partyId}", partyId);
             partyInfo = await _memoryCache.GetOrAddAsync($"Party-{partyId}-{certificateSubject}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);

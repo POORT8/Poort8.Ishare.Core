@@ -149,7 +149,6 @@ public class AuthenticationService : IAuthenticationService
         {
             accessToken = await _memoryCache.GetOrAddAsync($"AccessToken-{partyId}", async entry =>
             {
-                _logger.LogInformation("Fetched token from cache for party {partyId}", partyId);
                 var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
                 if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60);
