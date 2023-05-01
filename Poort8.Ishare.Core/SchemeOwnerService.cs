@@ -32,7 +32,7 @@ public class SchemeOwnerService : ISchemeOwnerService
         _memoryCache = memoryCache;
 
         _httpClient = httpClientFactory.CreateClient(nameof(SchemeOwnerService));
-        _httpClient.BaseAddress = new Uri(configuration["SchemeOwnerUrl"]);
+        _httpClient.BaseAddress = new Uri(configuration["SchemeOwnerUrl"]!);
 
         _authenticationService = authenticationService;
     }
@@ -60,14 +60,14 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         try
         {
-            var tokenUri = new Uri(new Uri(_configuration["SchemeOwnerUrl"]), "/connect/token");
-            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], tokenUri.AbsoluteUri);
+            var tokenUri = new Uri(new Uri(_configuration["SchemeOwnerUrl"]!), "/connect/token");
+            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"]!, tokenUri.AbsoluteUri);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<TrustedListResponse>("/trusted_list");
 
             if (response is null || response.TrustedListToken is null) { throw new Exception("TrustedList response is null."); }
 
-            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.TrustedListToken, 30, true);
+            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"]!, response.TrustedListToken);
 
             var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var trustedListToken = handler.ReadJwtToken(response.TrustedListToken);
@@ -113,14 +113,14 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         try
         {
-            var tokenUri = new Uri(new Uri(_configuration["SchemeOwnerUrl"]), "/connect/token");
-            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"], tokenUri.AbsoluteUri);
+            var tokenUri = new Uri(new Uri(_configuration["SchemeOwnerUrl"]!), "/connect/token");
+            var token = await _authenticationService.GetAccessTokenAtPartyAsync(_configuration["SchemeOwnerIdentifier"]!, tokenUri.AbsoluteUri);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<PartiesResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
 
             if (response is null || response.PartiesToken is null) { throw new Exception("Parties response is null."); }
 
-            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"], response.PartiesToken, 30, true);
+            _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"]!, response.PartiesToken);
 
             var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var partiesToken = handler.ReadJwtToken(response.PartiesToken);
