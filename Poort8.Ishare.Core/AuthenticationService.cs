@@ -33,7 +33,7 @@ public class AuthenticationService : IAuthenticationService
         _httpClient = httpClientFactory.CreateClient(nameof(AuthenticationService));
         _memoryCache = memoryCache;
         _certificateProvider = certificateProvider;
-        _clientId = configuration["ClientId"];
+        _clientId = configuration["ClientId"]!;
     }
 
     public string CreateAccessToken(string audience)
@@ -81,13 +81,13 @@ public class AuthenticationService : IAuthenticationService
 
     public void ValidateAuthorizationHeader(string validIssuer, StringValues authorizationHeader)
     {
-        if (authorizationHeader.Count != 1 || !authorizationHeader[0].StartsWith("Bearer "))
+        if (authorizationHeader.Count != 1 || authorizationHeader[0]?.StartsWith("Bearer ") != true)
         {
-            _logger.LogError("Invalid authorization header: {authorizationHeader}", authorizationHeader);
+            _logger.LogError("Invalid authorization header: {authorizationHeader}", authorizationHeader!);
             throw new Exception("Invalid authorization header.");
         }
 
-        ValidateAccessToken(validIssuer, authorizationHeader[0].Replace("Bearer ", ""));
+        ValidateAccessToken(validIssuer, authorizationHeader[0]!.Replace("Bearer ", ""));
     }
 
     public void ValidateAccessToken(string validIssuer, string accessToken)
@@ -168,7 +168,7 @@ public class AuthenticationService : IAuthenticationService
             {
                     new KeyValuePair<string, string>("grant_type", "client_credentials"),
                     new KeyValuePair<string, string>("scope", "iSHARE"),
-                    new KeyValuePair<string, string>("client_id", _configuration["ClientId"]),
+                    new KeyValuePair<string, string>("client_id", _configuration["ClientId"]!),
                     new KeyValuePair<string, string>("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"),
                     new KeyValuePair<string, string>("client_assertion", clientAssertion)
             };

@@ -15,11 +15,11 @@ public class CertificateProvider : ICertificateProvider
         try
         {
             _certificate = new X509Certificate2(
-                Convert.FromBase64String(configuration["Certificate"]),
+                Convert.FromBase64String(configuration["Certificate"]!),
                 string.IsNullOrEmpty(configuration["CertificatePassword"]) ? null : configuration["CertificatePassword"]);
 
             _chainCertificates = new X509Certificate2Collection();
-            var chain = configuration["CertificateChain"].Split(',');
+            var chain = configuration["CertificateChain"]!.Split(',');
             foreach (var certificate in chain)
             {
                 _chainCertificates.Add(new X509Certificate2(Convert.FromBase64String(certificate), string.IsNullOrEmpty(configuration["CertificateChainPassword"]) ? null : configuration["CertificateChainPassword"]));
