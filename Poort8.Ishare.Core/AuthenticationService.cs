@@ -147,7 +147,7 @@ public class AuthenticationService : IAuthenticationService
         }
         else
         {
-            accessToken = await _memoryCache.GetOrAddAsync($"AccessToken-{partyId}", async entry =>
+            accessToken = await _memoryCache.GetOrAddAsync($"AccessToken-{partyId}-{tokenUrl}", async entry =>
             {
                 var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
                 if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
