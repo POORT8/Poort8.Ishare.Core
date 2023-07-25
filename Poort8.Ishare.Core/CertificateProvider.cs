@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Azure.Identity;
+using Azure.Security.KeyVault.Certificates;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.X509Certificates;
@@ -14,9 +16,20 @@ public class CertificateProvider : ICertificateProvider
     {
         try
         {
-            _certificate = new X509Certificate2(
-                Convert.FromBase64String(configuration["Certificate"]!),
-                string.IsNullOrEmpty(configuration["CertificatePassword"]) ? null : configuration["CertificatePassword"]);
+            var keyVaultUrl = configuration["AzureKeyVaultUrl"];
+            var certificateName = configuration["CertificateName"];
+            if (!string.IsNullOrWhiteSpace(keyVaultUrl) && !string.IsNullOrWhiteSpace(certificateName))
+            {
+                var certificateClient = new CertificateClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
+                _certificate = certificateClient.DownloadCertificate(certificateName);
+            }
+            else
+            {
+
+                _certificate = new X509Certificate2(
+                    Convert.FromBase64String(configuration["Certificate"]!),
+                    string.IsNullOrEmpty(configuration["CertificatePassword"]) ? null : configuration["CertificatePassword"]);
+            }
 
             _chainCertificates = new X509Certificate2Collection();
             var chain = configuration["CertificateChain"]!.Split(',');
