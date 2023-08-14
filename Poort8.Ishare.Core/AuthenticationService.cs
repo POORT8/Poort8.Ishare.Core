@@ -201,9 +201,9 @@ public class AuthenticationService : IAuthenticationService
         var isVerified = chain.Build(signingCertificate);
 
         var keyUsages = signingCertificate.Extensions.OfType<X509KeyUsageExtension>();
-        if (!keyUsages.Any(u => u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature)))
+        if (!keyUsages.Any(u => u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature) || u.KeyUsages.HasFlag(X509KeyUsageFlags.NonRepudiation)))
         {
-            throw new Exception("Signing certificate does not have a digital signature key usage.");
+            throw new Exception("Signing certificate does not have a digital signature or non-repudiation key usage.");
         };
 
         if (!isVerified) { throw new Exception("Certificate chain is not verified."); }
