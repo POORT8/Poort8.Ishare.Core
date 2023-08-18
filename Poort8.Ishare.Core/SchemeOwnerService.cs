@@ -130,7 +130,7 @@ public class SchemeOwnerService : ISchemeOwnerService
             if (partiesInfoClaim is null || partiesInfoClaim.Count > 1 || partiesInfoClaim.PartiesInfo is null) { throw new Exception("Received invalid parties info."); }
 
             _logger.LogInformation("Received party info for party {party}", partyId);
-            return partiesInfoClaim.PartiesInfo.First() ?? throw new Exception("Received empty party info list.");
+            return partiesInfoClaim.PartiesInfo.FirstOrDefault() ?? throw new Exception("Received empty party info list.");
         }
         catch (Exception e)
         {
