@@ -92,21 +92,13 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     private async Task<PartyInfo> GetPartyAsync(string partyId, string certificateSubject)
     {
-        PartyInfo partyInfo;
-        if (_memoryCache == null)
-        {
-            partyInfo = await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject);
-        }
-        else
-        {
-            partyInfo = await _memoryCache.GetOrAddAsync($"Party-{partyId}-{certificateSubject}", async entry =>
+        return _memoryCache is null ?
+            await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject) :
+            await _memoryCache.GetOrAddAsync($"Party-{partyId}-{certificateSubject}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
                 return await GetPartyAtSchemeOwnerAsync(partyId, certificateSubject);
             });
-        }
-
-        return partyInfo;
     }
 
     private async Task<PartyInfo> GetPartyAtSchemeOwnerAsync(string partyId, string certificateSubject)
@@ -118,7 +110,7 @@ public class SchemeOwnerService : ISchemeOwnerService
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await _httpClient.GetFromJsonAsync<PartiesResponse>($"/parties?eori={partyId}&certificate_subject_name={certificateSubject}");
 
-            if (response is null || response.PartiesToken is null) { throw new Exception("Parties response is null."); }
+            if (response?.PartiesToken is null) throw new Exception("Parties response is null.");
 
             _authenticationService.ValidateToken(_configuration["SchemeOwnerIdentifier"]!, response.PartiesToken);
 
@@ -127,7 +119,7 @@ public class SchemeOwnerService : ISchemeOwnerService
             var partiesTokenClaim = partiesToken.Claims.Where(c => c.Type == "parties_info").First();
             var partiesInfoClaim = JsonSerializer.Deserialize<PartiesClaim>(partiesTokenClaim.Value);
 
-            if (partiesInfoClaim is null || partiesInfoClaim.Count > 1 || partiesInfoClaim.PartiesInfo is null) { throw new Exception("Received invalid parties info."); }
+            if (partiesInfoClaim?.PartiesInfo is null || partiesInfoClaim.Count > 1) throw new Exception("Received invalid parties info.");
 
             _logger.LogInformation("Received party info for party {party}", partyId);
             return partiesInfoClaim.PartiesInfo.FirstOrDefault() ?? throw new Exception("Received empty party info list.");
@@ -143,8 +135,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
-        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c);
-        if (chain is null) { throw new Exception("Empty x5c header."); }
+        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c) ?? throw new Exception("Empty x5c header.");
 
         var trustedList = await GetTrustedListAsync();
 
@@ -174,15 +165,12 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
-        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c);
-        if (chain is null) { throw new Exception("Empty x5c header."); }
+        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c) ?? throw new Exception("Empty x5c header.");
         var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
         var partyInfo = await GetPartyAsync(partyId, signingCertificate.Subject);
 
-        if (partyInfo is null ||
-            partyInfo.Adherence?.Status is null ||
-            !partyInfo.Adherence.Status.Equals("active", StringComparison.OrdinalIgnoreCase) ||
+        if (partyInfo.Adherence?.Status?.Equals("active", StringComparison.OrdinalIgnoreCase) != true ||
             partyInfo.Adherence.StartDate > DateTime.Now ||
             partyInfo.Adherence.EndDate <= DateTime.Now)
         {
@@ -193,8 +181,7 @@ public class SchemeOwnerService : ISchemeOwnerService
 
     private static string GetSha256Thumbprint(X509Certificate2 certificate)
     {
-        var hasher = SHA256.Create();
-        return Convert.ToHexString(hasher.ComputeHash(certificate.GetRawCertData()));
+        return Convert.ToHexString(SHA256.HashData(certificate.GetRawCertData()));
     }
 
     private class TokenResponse

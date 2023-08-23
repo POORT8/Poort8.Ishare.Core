@@ -101,8 +101,7 @@ public class AuthenticationService : IAuthenticationService
         {
             var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var jwtToken = handler.ReadJwtToken(token);
-            var chain = JsonSerializer.Deserialize<string[]>(jwtToken.Header.X5c);
-            if (chain is null) { throw new Exception("Empty x5c header."); }
+            var chain = JsonSerializer.Deserialize<string[]>(jwtToken.Header.X5c) ?? throw new Exception("Empty x5c header.");
             var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
             if (string.IsNullOrEmpty(jwtToken.Payload.Jti)) { throw new Exception("The 'jti' claim is missing from the client assertion."); }
@@ -141,16 +140,14 @@ public class AuthenticationService : IAuthenticationService
         string accessToken;
         if (_memoryCache == null)
         {
-            var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
-            if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
+            var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl) ?? throw new Exception($"Did not receive an access token from {partyId}.");
             accessToken = tokenResponse.AccessToken!;
         }
         else
         {
             accessToken = await _memoryCache.GetOrAddAsync($"AccessToken-{partyId}-{tokenUrl}", async entry =>
             {
-                var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl);
-                if (tokenResponse == null) { throw new Exception($"Did not receive an access token from {partyId}."); }
+                var tokenResponse = await GetAccessTokenAsync(partyId, tokenUrl) ?? throw new Exception($"Did not receive an access token from {partyId}.");
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60);
                 return tokenResponse.AccessToken!;
             });
