@@ -8,7 +8,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 
 namespace Poort8.Ishare.Core;
 
@@ -101,7 +100,8 @@ public class AuthenticationService : IAuthenticationService
         {
             var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
             var jwtToken = handler.ReadJwtToken(token);
-            var chain = JsonSerializer.Deserialize<string[]>(jwtToken.Header.X5c) ?? throw new Exception("Empty x5c header.");
+            var chain = GetCertificateChain(jwtToken);
+
             var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
             if (string.IsNullOrEmpty(jwtToken.Payload.Jti)) { throw new Exception("The 'jti' claim is missing from the client assertion."); }
@@ -133,6 +133,21 @@ public class AuthenticationService : IAuthenticationService
             _logger.LogError("Token validation error, for client id {clientId} and assertion {assertion}. With message: {msg}", validIssuer, token, e.Message);
             throw;
         }
+    }
+
+    private static string[] GetCertificateChain(JwtSecurityToken jwtToken)
+    {
+        var hasX5c = jwtToken.Header.TryGetValue("x5c", out object? x5c);
+        if (hasX5c == false) throw new Exception("Empty x5c header.");
+
+        var x5cObjects = (List<object>)x5c!;
+        var chain = new string[x5cObjects.Count];
+        for (int i = 0; i < x5cObjects.Count; i++)
+        {
+            chain[i] = (string)x5cObjects[i];
+        }
+
+        return chain;
     }
 
     public async Task<string> GetAccessTokenAtPartyAsync(string partyId, string tokenUrl)
