@@ -141,13 +141,7 @@ public class AuthenticationService : IAuthenticationService
         if (hasX5c == false) throw new Exception("Empty x5c header.");
 
         var x5cObjects = (List<object>)x5c!;
-        var chain = new string[x5cObjects.Count];
-        for (int i = 0; i < x5cObjects.Count; i++)
-        {
-            chain[i] = (string)x5cObjects[i];
-        }
-
-        return chain;
+        return x5cObjects.Select(x => x.ToString()!).ToArray();
     }
 
     public async Task<string> GetAccessTokenAtPartyAsync(string partyId, string tokenUrl)
