@@ -73,7 +73,7 @@ public class AuthenticationService : IAuthenticationService
 
         token.Header.Remove("kid");
         token.Header.Remove("x5t");
-        token.Header.Add("x5c", _certificateProvider.GetChainString());
+        token.Header.Add("x5c", _certificateProvider.GetChainString().ToList());
 
         return tokenHandler.WriteToken(token);
     }
