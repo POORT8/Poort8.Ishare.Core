@@ -144,7 +144,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
-        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c) ?? throw new Exception("Empty x5c header.");
+        var chain = AuthenticationService.GetCertificateChain(token);
 
         var trustedList = await GetTrustedListAsync();
 
@@ -174,7 +174,7 @@ public class SchemeOwnerService : ISchemeOwnerService
     {
         var handler = new JwtSecurityTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
         var token = handler.ReadJwtToken(clientAssertion);
-        var chain = JsonSerializer.Deserialize<string[]>(token.Header.X5c) ?? throw new Exception("Empty x5c header.");
+        var chain = AuthenticationService.GetCertificateChain(token);
         var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
         var (partyInfo, foundWithCertificateName) = await GetPartyAsync(partyId, signingCertificate.Subject);

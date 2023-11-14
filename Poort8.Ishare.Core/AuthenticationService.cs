@@ -135,7 +135,7 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
-    private static string[] GetCertificateChain(JwtSecurityToken jwtToken)
+    public static string[] GetCertificateChain(JwtSecurityToken jwtToken)
     {
         var hasX5c = jwtToken.Header.TryGetValue("x5c", out object? x5c);
         if (hasX5c == false) throw new Exception("Empty x5c header.");
