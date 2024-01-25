@@ -11,9 +11,12 @@ public class CertificateProvider : ICertificateProvider
 {
     private readonly X509Certificate2 _certificate;
     private readonly X509Certificate2Collection _chainCertificates;
+    private readonly ILogger<CertificateProvider> _logger;
 
     public CertificateProvider(ILogger<CertificateProvider> logger, IConfiguration configuration)
     {
+        _logger = logger;
+
         try
         {
             var keyVaultUrl = configuration["AzureKeyVaultUrl"];
@@ -25,7 +28,6 @@ public class CertificateProvider : ICertificateProvider
             }
             else
             {
-
                 _certificate = new X509Certificate2(
                     Convert.FromBase64String(configuration["Certificate"]!),
                     string.IsNullOrEmpty(configuration["CertificatePassword"]) ? null : configuration["CertificatePassword"]);
@@ -38,9 +40,9 @@ public class CertificateProvider : ICertificateProvider
                 _chainCertificates.Add(new X509Certificate2(Convert.FromBase64String(certificate), string.IsNullOrEmpty(configuration["CertificateChainPassword"]) ? null : configuration["CertificateChainPassword"]));
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            logger.LogError("Could not create the certificate from configuration.");
+            _logger.LogCritical("Could not create the certificate from configuration: {msg}", e.Message);
             throw;
         }
     }
@@ -57,13 +59,24 @@ public class CertificateProvider : ICertificateProvider
 
     public X509Chain GetChain()
     {
+        //iSHARE reference: https://github.com/iSHAREScheme/code-snippets/blob/master/DotNet/CertificateValidator.cs
+
         var chain = new X509Chain();
         chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
         chain.ChainPolicy.CustomTrustStore.AddRange(_chainCertificates);
         chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-        var isVerified = chain.Build(_certificate);
+        var isValid = chain.Build(_certificate);
 
-        if (!isVerified) { throw new Exception("Certificate chain is not verified."); }
+        foreach (var chainStatus in chain.ChainStatus)
+        {
+            _logger.LogWarning("Chain status warning: {chainStatus} with information: {chainStatusInformation}", chainStatus.Status, chainStatus.StatusInformation);
+        }
+
+        if (!isValid)
+        {
+            _logger.LogCritical("Certificate chain is not valid.");
+            throw new Exception("Certificate chain is not valid.");
+        }
 
         return chain;
     }
