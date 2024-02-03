@@ -1,14 +1,24 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Poort8.Ishare.Core;
 
 public static class ServicesConfiguration
 {
-    public static void AddIshareCoreServices(this IServiceCollection services)
+    public static void AddIshareCoreServices(
+        this IServiceCollection services,
+        IConfiguration config)
     {
-        services.AddSingleton<ICertificateProvider, CertificateProvider>();
+        services.AddOptions<IshareCoreOptions>()
+            .Bind(config.GetRequiredSection("IshareCoreOptions"))
+            .ValidateDataAnnotations();
+
+        services.AddLogging();
+        services.AddSingleton<IAccessTokenService, AccessTokenService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
-        services.AddSingleton<ISchemeOwnerService, SchemeOwnerService>();
-        services.AddSingleton<IPolicyEnforcementPoint, PolicyEnforcementPoint>();
+        services.AddSingleton<IAuthorizationRegistryService, AuthorizationRegistryService>();
+        services.AddSingleton<ICertificateProvider, CertificateProvider>();
+        services.AddSingleton<ICertificateValidator, CertificateValidator>();
+        services.AddSingleton<ISatelliteService, SatelliteService>();
     }
 }
