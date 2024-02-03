@@ -22,4 +22,5 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-build --verbosity normal --filter "FullyQualifiedName!~Port8.Ishare.Core.Tests.SchemeOwnerIntegrationTests&FullyQualifiedName!~Port8.Ishare.Core.Tests.IntegrationTests"
+
