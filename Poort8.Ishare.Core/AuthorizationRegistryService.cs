@@ -22,7 +22,7 @@ public class AuthorizationRegistryService(
     {
         try
         {
-            await SetAuthorizationHeader( accessTokenService);
+            await SetAuthorizationHeader(accessTokenService);
 
             var delegationUrl = GetUrl("delegation");
             var response = await httpClient.PostAsJsonAsync(delegationUrl, delegationMask);
@@ -53,7 +53,7 @@ public class AuthorizationRegistryService(
         string? validAction)
     {
         logger.LogInformation("Verifying delegation evidence {delegationEvidence}", JsonSerializer.Serialize(delegationEvidence));
-        
+
         var policy = delegationEvidence.PolicySets[0].Policies[0];
 
         if (validPolicyIssuer is not null &&

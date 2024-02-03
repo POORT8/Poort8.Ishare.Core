@@ -9,7 +9,7 @@ namespace Poort8.Ishare.Core.Tests;
 
 public class CertificateProviderTests
 {
-    private IOptions<IshareCoreOptions> _options;
+    private readonly IOptions<IshareCoreOptions> _options;
 
     public CertificateProviderTests()
     {
