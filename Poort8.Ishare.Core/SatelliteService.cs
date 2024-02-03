@@ -164,7 +164,7 @@ public class SatelliteService(
 
     private async Task<JsonWebToken> SatelliteTokenValidation(string token)
     {
-        var handler = new JsonWebTokenHandler();
+        var handler = new JsonWebTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
 
         //NOTE: As we trust the satellite and get the tokens from a predefined over HTTPS we only do basic token validation.
         var tokenValidationParameters = new TokenValidationParameters()
