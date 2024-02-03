@@ -166,7 +166,7 @@ public class SatelliteService(
     {
         var handler = new JsonWebTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
 
-        //NOTE: As we trust the satellite and get the tokens from a predefined over HTTPS we only do basic token validation.
+        //NOTE: As we trust the satellite and get the tokens from a predefined url over HTTPS we only do basic token validation.
         var tokenValidationParameters = new TokenValidationParameters()
         {
             ValidAlgorithms = new List<string>() { "RS256" },
