@@ -7,8 +7,9 @@ public class CertificateValidator(
     ILogger<CertificateValidator> logger,
     ISatelliteService satelliteService) : ICertificateValidator
 {
-    public async Task ValidateX5cChain(string[] chainString, X509Certificate2 signingCertificate)
+    public async Task<X509Certificate2> ValidateX5cChain(string[] chainString)
     {
+        var signingCertificate = new X509Certificate2(Convert.FromBase64String(chainString.First()));
         var chainCertificates = new X509Certificate2Collection();
         foreach (var certificate in chainString.Skip(1))
         {
@@ -18,6 +19,8 @@ public class CertificateValidator(
         _ = ValidateChain(chainCertificates, signingCertificate);
 
         await CheckRootCertificateIsInTrustedList(chainCertificates.Last());
+
+        return signingCertificate;
     }
 
     public X509Chain ValidateChain(X509Certificate2Collection chainCertificates, X509Certificate2 signingCertificate)
@@ -42,7 +45,7 @@ public class CertificateValidator(
 
         var keyUsages = signingCertificate.Extensions.OfType<X509KeyUsageExtension>();
         if (!keyUsages.Any(u =>
-            u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature) ||
+            u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature) || //NOTE: iSHARE uses DigitalSignature and NonRepudiation
             u.KeyUsages.HasFlag(X509KeyUsageFlags.NonRepudiation)))
         {
             throw new Exception("Signing certificate does not have a digital signature or non-repudiation key usage.");

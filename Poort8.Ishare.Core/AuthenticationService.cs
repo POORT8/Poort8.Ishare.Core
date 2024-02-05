@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace Poort8.Ishare.Core;
@@ -87,9 +86,8 @@ public class AuthenticationService(
             //NOTE: The token must be read before it can be validated because the signing certificate is needed.
             var decodedToken = handler.CanReadToken(token) ? handler.ReadJsonWebToken(token) : throw new Exception("CanReadToken fails.");
             var chain = GetCertificateChain(decodedToken);
-            var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
 
-            await certificateValidator.ValidateX5cChain(chain, signingCertificate);
+            var signingCertificate = await certificateValidator.ValidateX5cChain(chain);
 
             if (validIssuer != clientId)
                 await satelliteService.VerifyParty(validIssuer, signingCertificate.Subject, CertificateProvider.GetSha256Thumbprint(signingCertificate));

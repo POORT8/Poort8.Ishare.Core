@@ -7,13 +7,11 @@ public class IshareCoreOptions
     [Required]
     public required string ClientId { get; set; }
     [Required]
-    public required string AuthorizationRegistryId { get; set; }
-    [Required]
-    public required string AuthorizationRegistryUrl { get; set; }
-    [Required]
     public required string SatelliteId { get; set; }
     [Required]
     public required string SatelliteUrl { get; set; }
+    public string? AuthorizationRegistryId { get; set; }
+    public string? AuthorizationRegistryUrl { get; set; }
     public string? AzureKeyVaultUrl { get; set; }
     public string? CertificateName { get; set; }
     public string? Certificate { get; set; }

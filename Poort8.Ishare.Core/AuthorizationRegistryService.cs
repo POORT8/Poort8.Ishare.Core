@@ -29,7 +29,7 @@ public class AuthorizationRegistryService(
             response.EnsureSuccessStatusCode();
             var delegationResponse = await response.Content.ReadFromJsonAsync<DelegationResponse>();
 
-            await authenticationService.ValidateToken(delegationResponse!.DelegationToken, options.Value.AuthorizationRegistryId);
+            await authenticationService.ValidateToken(delegationResponse!.DelegationToken, options.Value.AuthorizationRegistryId!);
 
             var delegationEvidence = DecodeDelegationToken(delegationResponse!);
 
@@ -106,13 +106,13 @@ public class AuthorizationRegistryService(
     private async Task SetAuthorizationHeader(IAccessTokenService accessTokenService)
     {
         var tokenUrl = GetUrl("connect/token");
-        var token = await accessTokenService.GetAccessTokenAtParty(options.Value.AuthorizationRegistryId, tokenUrl);
+        var token = await accessTokenService.GetAccessTokenAtParty(options.Value.AuthorizationRegistryId!, tokenUrl);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
     private string GetUrl(string relativeUrl)
     {
-        var baseUrl = new Uri(options.Value.AuthorizationRegistryUrl);
+        var baseUrl = new Uri(options.Value.AuthorizationRegistryUrl!);
         return new Uri(baseUrl, relativeUrl).AbsoluteUri;
     }
 
