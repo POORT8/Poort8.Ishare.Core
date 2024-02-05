@@ -77,7 +77,6 @@ public class SchemeOwnerIntegrationTests
     {
         var partyInfo = await _satelliteService.VerifyParty(
             _options.Value.SatelliteId,
-            "C = NL,O = iSHARETest,OU = Test and QA,serialNumber = EU.EORI.NL000000000,CN = iSHARE Scheme Owner",
             "3BB7A41A805D7CC4E8733B7CD4BF1CDC399B2C2A");
 
         partyInfo.Should().NotBeNull();
@@ -88,7 +87,6 @@ public class SchemeOwnerIntegrationTests
     {
         Func<Task> act = () => _satelliteService.VerifyParty(
             _options.Value.SatelliteId,
-            "C = NL,O = iSHARETest,OU = Test and QA,serialNumber = EU.EORI.NL000000000,CN = iSHARE Scheme Owner",
             "fail");
 
         //NOTE: Fails because we cannot do any certificate check at the Scheme Owner

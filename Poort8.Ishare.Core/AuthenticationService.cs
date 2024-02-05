@@ -90,7 +90,7 @@ public class AuthenticationService(
             var signingCertificate = await certificateValidator.ValidateX5cChain(chain);
 
             if (validIssuer != clientId)
-                await satelliteService.VerifyParty(validIssuer, signingCertificate.Subject, CertificateProvider.GetSha256Thumbprint(signingCertificate));
+                await satelliteService.VerifyParty(validIssuer, CertificateProvider.GetSha256Thumbprint(signingCertificate));
 
             var tokenValidationParameters = new TokenValidationParameters()
             {

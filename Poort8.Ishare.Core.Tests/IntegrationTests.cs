@@ -77,7 +77,6 @@ public class IntegrationTests
     {
         var partyInfo = await _satelliteService.VerifyParty(
             _options.Value.SatelliteId,
-            "CN=DVU PIR Test 1,SERIALNUMBER=EU.EORI.NLDVUPIRTEST1,OU=Test,O=DVU,C=NL",
             "145dd7c41a2f9b989f16f1250c5a9291094c300590db01903efe1fb1de651b48");
 
         partyInfo.Should().NotBeNull();
@@ -88,7 +87,6 @@ public class IntegrationTests
     {
         Func<Task> act = () => _satelliteService.VerifyParty(
             _options.Value.SatelliteId,
-            "CN=DVU PIR Test 1,SERIALNUMBER=EU.EORI.NLDVUPIRTEST1,OU=Test,O=DVU,C=NL",
             "fail");
 
         await act.Should().ThrowAsync<Exception>();

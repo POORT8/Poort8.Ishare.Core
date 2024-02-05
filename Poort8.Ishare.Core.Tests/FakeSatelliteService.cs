@@ -29,7 +29,7 @@ internal class FakeSatelliteService : ISatelliteService
         return Task.FromResult(trustedList.AsEnumerable());
     }
 
-    public Task<PartyInfo> VerifyParty(string partyId, string certificateSubject, string certificateThumbprint)
+    public Task<PartyInfo> VerifyParty(string partyId, string certificateThumbprint)
     {
         var adherenceFaker = new Faker<Adherence>()
             .CustomInstantiator(f => new Adherence(

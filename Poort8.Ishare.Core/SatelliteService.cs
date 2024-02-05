@@ -44,7 +44,7 @@ public class SatelliteService(
     {
         try
         {
-            await SetAuthorizationHeader(accessTokenService);
+            await SetAuthorizationHeader();
 
             var trustedListUrl = GetUrl("trusted_list");
             var response = await httpClient.GetFromJsonAsync<TrustedListResponse>(trustedListUrl);
@@ -52,7 +52,7 @@ public class SatelliteService(
             var trustedList = await DecodeTrustedListToken(response!);
 
             logger.LogInformation("Received trusted list from satellite with {trustedListCount} values.", trustedList.Count());
-            return trustedList!;
+            return trustedList;
         }
         catch (Exception e)
         {
@@ -61,80 +61,73 @@ public class SatelliteService(
         }
     }
 
-    private async Task<IEnumerable<TrustedListAuthority?>> DecodeTrustedListToken(TrustedListResponse token)
+    private async Task<IEnumerable<TrustedListAuthority>> DecodeTrustedListToken(TrustedListResponse token)
     {
         var trustedListToken = await SatelliteTokenValidation(token.TrustedListToken);
 
         return trustedListToken.Claims
             .Where(c => c.Type == "trusted_list")
-            .Select(c => JsonSerializer.Deserialize<TrustedListAuthority>(c.Value))
+            .Select(c => JsonSerializer.Deserialize<TrustedListAuthority>(c.Value)!)
             .Where(a =>
-                a!.Status.Equals("granted", StringComparison.OrdinalIgnoreCase) &&
+                a.Status.Equals("granted", StringComparison.OrdinalIgnoreCase) &&
                 a.Validity.Equals("valid", StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<PartyInfo> VerifyParty(string partyId, string certificateSubject, string certificateThumbprint)
+    public async Task<PartyInfo> VerifyParty(string partyId, string certificateThumbprint)
     {
         PartyInfo partyInfo;
         if (memoryCache == null)
         {
-            var partyInfos = await GetPartyInfoAtSatellite(partyId, certificateSubject);
-            partyInfo = CheckPartyProperties(partyInfos, certificateSubject, certificateThumbprint);
+            var partyInfos = await GetPartyInfoAtSatellite(partyId);
+            partyInfo = CheckPartyProperties(partyInfos, certificateThumbprint);
         }
         else
         {
-            string cacheKey = $"PartyInfo-{partyId.Replace('-', '_')}-{certificateSubject.Replace('-', '_')}";
+            string cacheKey = $"PartyInfo-{partyId.Replace('-', '_')}-{certificateThumbprint.Replace('-', '_')}";
             partyInfo = await memoryCache.GetOrAddAsync(cacheKey, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-                var partyInfos = await GetPartyInfoAtSatellite(partyId, certificateSubject);
-                return CheckPartyProperties(partyInfos, certificateSubject, certificateThumbprint);
+                var partyInfos = await GetPartyInfoAtSatellite(partyId);
+                return CheckPartyProperties(partyInfos, certificateThumbprint);
             });
         }
 
         return partyInfo;
     }
 
-    private PartyInfo CheckPartyProperties(IEnumerable<PartyInfo> partyInfos, string certificateSubject, string certificateThumbprint)
+    private PartyInfo CheckPartyProperties(IEnumerable<PartyInfo> partyInfos, string certificateThumbprint)
     {
         try
         {
             if (partyInfos.First().Certifications is not null)
             {
-                //NOTE: We cannot do any certificate chechs for the scheme owner.
+                //NOTE: We cannot do any certificate checks for the scheme owner.
                 return partyInfos.First();
             }
 
             return partyInfos
                 .Where(p => p.Certificates
-                    .Any(c =>
-                        c.SubjectName.Equals(certificateSubject, StringComparison.OrdinalIgnoreCase) &&
-                        c.X5tS256.Equals(certificateThumbprint, StringComparison.OrdinalIgnoreCase)))
+                    .Any(c => c.X5tS256.Equals(certificateThumbprint, StringComparison.OrdinalIgnoreCase)))
                 .First();
         }
         catch (Exception e)
         {
-            logger.LogError("CheckPartyProperties failed for certificate subject {certificateSubject}: {msg}", certificateSubject, e.Message);
+            logger.LogError("CheckPartyProperties failed for certificate with thumbprint {certificateThumbprint}: {msg}", certificateThumbprint, e.Message);
             throw;
         }
     }
 
-    private async Task<IEnumerable<PartyInfo>> GetPartyInfoAtSatellite(string partyId, string certificateSubject)
+    private async Task<IEnumerable<PartyInfo>> GetPartyInfoAtSatellite(string partyId)
     {
         try
         {
-            await SetAuthorizationHeader(accessTokenService);
+            await SetAuthorizationHeader();
 
             var partiesUrl = GetUrl("parties");
 
             var builder = new UriBuilder(partiesUrl);
             var queryParameters = HttpUtility.ParseQueryString(string.Empty);
             queryParameters["eori"] = partyId;
-
-            if (!(partiesUrl.StartsWith("https://scheme.isharetest.net", StringComparison.CurrentCultureIgnoreCase) ||
-                partiesUrl.StartsWith("https://so.ishareworks.org", StringComparison.CurrentCultureIgnoreCase)))
-                queryParameters["certificate_subject_name"] = certificateSubject; //NOTE: This parameter is incompatible with the Scheme Owner.
-
             queryParameters["active_only"] = "true";
             builder.Query = queryParameters.ToString();
 
@@ -186,7 +179,7 @@ public class SatelliteService(
         return handler.ReadJsonWebToken(token);
     }
 
-    private async Task SetAuthorizationHeader(IAccessTokenService accessTokenService)
+    private async Task SetAuthorizationHeader()
     {
         var tokenUrl = GetUrl("connect/token");
         var token = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);

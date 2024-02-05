@@ -22,7 +22,7 @@ public class AuthorizationRegistryService(
     {
         try
         {
-            await SetAuthorizationHeader(accessTokenService);
+            await SetAuthorizationHeader();
 
             var delegationUrl = GetUrl("delegation");
             var response = await httpClient.PostAsJsonAsync(delegationUrl, delegationMask);
@@ -103,7 +103,7 @@ public class AuthorizationRegistryService(
         return permit;
     }
 
-    private async Task SetAuthorizationHeader(IAccessTokenService accessTokenService)
+    private async Task SetAuthorizationHeader()
     {
         var tokenUrl = GetUrl("connect/token");
         var token = await accessTokenService.GetAccessTokenAtParty(options.Value.AuthorizationRegistryId!, tokenUrl);
