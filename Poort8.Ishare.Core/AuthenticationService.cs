@@ -121,6 +121,8 @@ public class AuthenticationService(
                 logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The 'iss' claim is not equal to the 'sub' claim.");
                 throw new Exception("The 'iss' claim is not equal to the 'sub' claim.");
             }
+
+            //TODO: Except from the alg, typ and x5c parameter, the JWT header SHALL NOT contain other header parameters. Check with iSHARE foundation.
         }
         catch (Exception e)
         {

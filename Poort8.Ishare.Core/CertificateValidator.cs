@@ -18,8 +18,6 @@ public class CertificateValidator(
         _ = ValidateChain(chainCertificates, signingCertificate);
 
         await CheckRootCertificateIsInTrustedList(chainCertificates.Last());
-
-        //TODO: Except from the alg, typ and x5c parameter, the JWT header SHALL NOT contain other header parameters. Check with iSHARE foundation.
     }
 
     public X509Chain ValidateChain(X509Certificate2Collection chainCertificates, X509Certificate2 signingCertificate)
