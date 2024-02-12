@@ -14,11 +14,14 @@ public static class ServicesConfiguration
             .ValidateDataAnnotations();
 
         services.AddLogging();
+        services.AddHttpClient();
+        services.AddLazyCache();
         services.AddSingleton<IAccessTokenService, AccessTokenService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IAuthorizationRegistryService, AuthorizationRegistryService>();
         services.AddSingleton<ICertificateProvider, CertificateProvider>();
         services.AddSingleton<ICertificateValidator, CertificateValidator>();
+        services.AddSingleton<IClientAssertionCreator, ClientAssertionCreator>();
         services.AddSingleton<ISatelliteService, SatelliteService>();
     }
 }

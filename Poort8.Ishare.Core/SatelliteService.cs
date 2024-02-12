@@ -17,25 +17,17 @@ public class SatelliteService(
     IOptions<IshareCoreOptions> options,
     IHttpClientFactory httpClientFactory,
     IAccessTokenService accessTokenService,
-    IAppCache? memoryCache) : ISatelliteService
+    IAppCache memoryCache) : ISatelliteService
 {
     private readonly HttpClient httpClient = httpClientFactory.CreateClient(nameof(SatelliteService));
 
     public async Task<IEnumerable<TrustedListAuthority>> GetValidTrustedList()
     {
-        IEnumerable<TrustedListAuthority> trustedList;
-        if (memoryCache == null)
+        var trustedList = await memoryCache.GetOrAddAsync("TrustedList", async entry =>
         {
-            trustedList = await GetTrustedListAtSatellite();
-        }
-        else
-        {
-            trustedList = await memoryCache.GetOrAddAsync("TrustedList", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-                return await GetTrustedListAtSatellite();
-            });
-        }
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+            return await GetTrustedListAtSatellite();
+        });
 
         return trustedList;
     }
@@ -75,22 +67,13 @@ public class SatelliteService(
 
     public async Task<PartyInfo> VerifyParty(string partyId, string certificateThumbprint)
     {
-        PartyInfo partyInfo;
-        if (memoryCache == null)
+        string cacheKey = $"PartyInfo-{partyId.Replace('-', '_')}-{certificateThumbprint.Replace('-', '_')}";
+        var partyInfo = await memoryCache.GetOrAddAsync(cacheKey, async entry =>
         {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
             var partyInfos = await GetPartyInfoAtSatellite(partyId);
-            partyInfo = CheckPartyProperties(partyInfos, certificateThumbprint);
-        }
-        else
-        {
-            string cacheKey = $"PartyInfo-{partyId.Replace('-', '_')}-{certificateThumbprint.Replace('-', '_')}";
-            partyInfo = await memoryCache.GetOrAddAsync(cacheKey, async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-                var partyInfos = await GetPartyInfoAtSatellite(partyId);
-                return CheckPartyProperties(partyInfos, certificateThumbprint);
-            });
-        }
+            return CheckPartyProperties(partyInfos, certificateThumbprint);
+        });
 
         return partyInfo;
     }
@@ -180,7 +163,7 @@ public class SatelliteService(
     }
 
     private async Task SetAuthorizationHeader()
-    {
+    {   
         var tokenUrl = GetUrl("connect/token");
         var token = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

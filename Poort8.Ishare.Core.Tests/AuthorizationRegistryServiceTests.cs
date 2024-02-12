@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using FluentAssertions;
+using LazyCache;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -20,14 +21,15 @@ public class AuthorizationRegistryServiceTests
         var fakeSatelliteService = new FakeSatelliteService();
 
         var httpClientFactory = Substitute.For<IHttpClientFactory>();
+        var memoryCache = Substitute.For<IAppCache>();
         var certificateProvider = new CertificateProvider(NullLogger<CertificateProvider>.Instance, _options);
         var certificateValidator = new CertificateValidator(NullLogger<CertificateValidator>.Instance, fakeSatelliteService);
+        var clientAssertionCreator = new ClientAssertionCreator(_options, certificateProvider);
 
         var authenticationService = new AuthenticationService(
             NullLogger<AuthenticationService>.Instance,
             _options,
             httpClientFactory,
-            certificateProvider,
             certificateValidator,
             fakeSatelliteService);
 
@@ -35,8 +37,8 @@ public class AuthorizationRegistryServiceTests
             new NullLogger<AccessTokenService>(),
             _options,
             httpClientFactory,
-            authenticationService,
-            null);
+            clientAssertionCreator,
+            memoryCache);
 
         _authorizationRegistryService = new AuthorizationRegistryService(
             NullLogger<AuthorizationRegistryService>.Instance,

@@ -13,12 +13,12 @@ public class CertificateValidator(
         var chainCertificates = new X509Certificate2Collection();
         foreach (var certificate in chainString.Skip(1))
         {
-            chainCertificates.Add(new X509Certificate2(Convert.FromBase64String(certificate)));
+            var chainCertificate = new X509Certificate2(Convert.FromBase64String(certificate));
+            await CheckCertificateIsInTrustedList(chainCertificate);
+            chainCertificates.Add(chainCertificate);
         }
 
         _ = ValidateChain(chainCertificates, signingCertificate);
-
-        await CheckRootCertificateIsInTrustedList(chainCertificates.Last());
 
         return signingCertificate;
     }
@@ -60,7 +60,7 @@ public class CertificateValidator(
         return chain;
     }
 
-    private async Task CheckRootCertificateIsInTrustedList(X509Certificate2 x509Certificate2)
+    private async Task CheckCertificateIsInTrustedList(X509Certificate2 x509Certificate2)
     {
         var trustedList = await satelliteService.GetValidTrustedList();
 

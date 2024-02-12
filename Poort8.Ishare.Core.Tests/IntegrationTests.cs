@@ -1,65 +1,36 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Poort8.Ishare.Core.Tests;
 public class IntegrationTests
 {
-    private readonly IOptions<IshareCoreOptions> _options;
-    private readonly AccessTokenService _accessTokenService;
-    private readonly SatelliteService _satelliteService;
+    private readonly ServiceProvider _serviceProvider;
 
     public IntegrationTests()
     {
+        var services = new ServiceCollection();
+
         var config = new ConfigurationBuilder()
             .AddUserSecrets<IntegrationTests>()
             .Build();
 
-        var services = new ServiceCollection();
-        services.AddOptions<IshareCoreOptions>()
-            .Bind(config.GetRequiredSection("IshareCoreOptions"))
-            .ValidateDataAnnotations();
-        services.AddHttpClient();
+        services.AddIshareCoreServices(config);
 
-        var httpClientFactory = services.BuildServiceProvider()
-            .GetRequiredService<IHttpClientFactory>();
-        _options = services.BuildServiceProvider()
-            .GetRequiredService<IOptions<IshareCoreOptions>>();
-
-        var certificateValidator = new CertificateValidator(new NullLogger<CertificateValidator>(), _satelliteService!);
-
-        var certificateProvider = new CertificateProvider(new NullLogger<CertificateProvider>(), _options);
-
-        var authenticationService = new AuthenticationService(
-            new NullLogger<AuthenticationService>(),
-            _options,
-            httpClientFactory,
-            certificateProvider,
-            certificateValidator,
-            _satelliteService!);
-
-        _accessTokenService = new AccessTokenService(
-            new NullLogger<AccessTokenService>(),
-            _options,
-            httpClientFactory,
-            authenticationService,
-            null);
-
-        _satelliteService = new SatelliteService(
-            new NullLogger<SatelliteService>(),
-            _options,
-            httpClientFactory,
-            _accessTokenService,
-            null);
+        _serviceProvider = services.BuildServiceProvider();
     }
 
     [Fact]
     public async void GetAccessTokenAtPartyReturnsAccessToken()
     {
-        var tokenUrl = $"{_options.Value.SatelliteUrl}/connect/token";
-        var accessToken = await _accessTokenService.GetAccessTokenAtParty(_options.Value.SatelliteId, tokenUrl);
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+        var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
+
+        var tokenUrl = $"{options.Value.SatelliteUrl}/connect/token";
+        var accessToken = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
 
         accessToken.Should().NotBeNullOrEmpty();
     }
@@ -67,7 +38,9 @@ public class IntegrationTests
     [Fact]
     public async Task GetValidTrustedListReturnsValidList()
     {
-        var trustedList = await _satelliteService.GetValidTrustedList();
+        var satelliteService = _serviceProvider.GetRequiredService<ISatelliteService>();
+
+        var trustedList = await satelliteService.GetValidTrustedList();
 
         trustedList.Should().NotBeNullOrEmpty();
     }
@@ -75,8 +48,11 @@ public class IntegrationTests
     [Fact]
     public async Task GetVerifyPartyReturnsValidParty()
     {
-        var partyInfo = await _satelliteService.VerifyParty(
-            _options.Value.SatelliteId,
+        var satelliteService = _serviceProvider.GetRequiredService<ISatelliteService>();
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+
+        var partyInfo = await satelliteService.VerifyParty(
+            options.Value.SatelliteId,
             "145dd7c41a2f9b989f16f1250c5a9291094c300590db01903efe1fb1de651b48");
 
         partyInfo.Should().NotBeNull();
@@ -85,11 +61,30 @@ public class IntegrationTests
     [Fact]
     public async Task GetVerifyPartyWrongCertThrows()
     {
-        Func<Task> act = () => _satelliteService.VerifyParty(
-            _options.Value.SatelliteId,
+        var satelliteService = _serviceProvider.GetRequiredService<ISatelliteService>();
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+
+        Func<Task> act = () => satelliteService.VerifyParty(
+            options.Value.SatelliteId,
             "fail");
 
         await act.Should().ThrowAsync<Exception>();
+    }
+
+    [Fact]
+    public async Task ValidClientAssertionShouldPassValidateX5cChain()
+    {
+        var clientAssertionCreator = _serviceProvider.GetRequiredService<IClientAssertionCreator>();
+        var certificateValidator = _serviceProvider.GetRequiredService<ICertificateValidator>();
+
+        var clientAssertion = clientAssertionCreator.CreateClientAssertion("aud");
+
+        var handler = new JsonWebTokenHandler();
+        var decodedToken = handler.ReadJsonWebToken(clientAssertion);
+        var chain = AuthenticationService.GetCertificateChain(decodedToken);
+        var signingCertificate = await certificateValidator.ValidateX5cChain(chain);
+
+        signingCertificate.Should().BeOfType<X509Certificate2>();
     }
 
     //TODO: GetDelegationEvidence and VerifyDelegationEvidencePermit

@@ -1,8 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 using NSubstitute;
 
 namespace Poort8.Ishare.Core.Tests;
@@ -11,6 +9,7 @@ public class AuthenticationServiceTests
     private readonly IOptions<IshareCoreOptions> _options;
     private readonly CertificateProvider _certificateProvider;
     private readonly AuthenticationService _authenticationService;
+    private readonly ClientAssertionCreator _clientAssertionCreator;
 
     public AuthenticationServiceTests()
     {
@@ -27,33 +26,16 @@ public class AuthenticationServiceTests
             NullLogger<AuthenticationService>.Instance,
             _options,
             httpClientFactory,
-            _certificateProvider,
             certificateValidator,
             fakeSatelliteService);
-    }
 
-    [Fact]
-    public async Task CreateClientAssertionUsingJsonWebTokenHandlerShouldReturnValidToken()
-    {
-        var token = _authenticationService.CreateClientAssertionUsingJsonWebTokenHandler("aud");
-
-        token.Should().NotBeNullOrEmpty();
-        await DoBasicTokenChecks(token);
-    }
-
-    [Fact]
-    public async Task CreateClientAssertionShouldReturnValidToken()
-    {
-        var token = _authenticationService.CreateClientAssertion("aud");
-
-        token.Should().NotBeNullOrEmpty();
-        await DoBasicTokenChecks(token);
+        _clientAssertionCreator = new ClientAssertionCreator(_options, _certificateProvider);
     }
 
     [Fact]
     public async Task ValidateClientAssertionShouldPass()
     {
-        var token = _authenticationService.CreateClientAssertion("serviceProvider");
+        var token = _clientAssertionCreator.CreateClientAssertion("serviceProvider");
 
         //NOTE: The audience is set to "serviceProvider" since validAudience is set to _clientId in ValidateToken.
         Func<Task> act = () => _authenticationService.ValidateClientAssertion(token, "serviceProvider");
@@ -64,7 +46,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task ValidateClientAssertionWrongClientIdHeaderShouldFail()
     {
-        var token = _authenticationService.CreateClientAssertion("serviceProvider");
+        var token = _clientAssertionCreator.CreateClientAssertion("serviceProvider");
 
         Func<Task> act = () => _authenticationService.ValidateClientAssertion(token, "fail");
 
@@ -74,7 +56,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task ValidateClientAssertionWrongAudShouldFail()
     {
-        var token = _authenticationService.CreateClientAssertion("fail");
+        var token = _clientAssertionCreator.CreateClientAssertion("fail");
 
         Func<Task> act = () => _authenticationService.ValidateClientAssertion(token, "serviceProvider");
 
@@ -89,33 +71,5 @@ public class AuthenticationServiceTests
         Func<Task> act = () => _authenticationService.ValidateClientAssertion(token, "serviceConsumer");
 
         await act.Should().NotThrowAsync();
-    }
-
-    private async Task DoBasicTokenChecks(string token)
-    {
-        var tokenValidationParameters = new TokenValidationParameters()
-        {
-            ValidAlgorithms = new List<string>() { "RS256" },
-            ValidTypes = new List<string>() { "JWT" },
-            ValidateIssuer = true,
-            ValidIssuer = _options.Value.ClientId,
-            ValidateAudience = true,
-            ValidAudience = "aud",
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = _certificateProvider.GetSigningCredentials().Key,
-            RequireExpirationTime = true,
-            PropertyBag = new Dictionary<string, object> { { "expSeconds", 30 } },
-            LifetimeValidator = AuthenticationService.ClientAssertionLifetimeValidator,
-            RequireSignedTokens = true
-        };
-
-        var handler = new JsonWebTokenHandler();
-        var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
-
-        validationResult.Claims.TryGetValue("sub", out object? sub).Should().BeTrue();
-        sub.Should().Be(_options.Value.ClientId);
-
-        validationResult.IsValid.Should().BeTrue();
     }
 }

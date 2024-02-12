@@ -10,29 +10,20 @@ public class AccessTokenService(
     ILogger<AccessTokenService> logger,
     IOptions<IshareCoreOptions> options,
     IHttpClientFactory httpClientFactory,
-    IAuthenticationService authenticationService,
-    IAppCache? memoryCache) : IAccessTokenService
+    IClientAssertionCreator clientAssertionCreator,
+    IAppCache memoryCache) : IAccessTokenService
 {
     private readonly HttpClient httpClient = httpClientFactory.CreateClient(nameof(AccessTokenService));
 
     public async Task<string> GetAccessTokenAtParty(string partyId, string tokenUrl)
     {
-        string accessToken;
-        if (memoryCache == null)
+        string cacheKey = $"AccessToken-{partyId.Replace('-', '_')}-{tokenUrl.Replace('-', '_')}";
+        var accessToken = await memoryCache.GetOrAddAsync(cacheKey, async entry =>
         {
             var tokenResponse = await GetAccessToken(partyId, tokenUrl);
-            accessToken = tokenResponse.AccessToken!;
-        }
-        else
-        {
-            string cacheKey = $"AccessToken-{partyId.Replace('-', '_')}-{tokenUrl.Replace('-', '_')}";
-            accessToken = await memoryCache.GetOrAddAsync(cacheKey, async entry =>
-            {
-                var tokenResponse = await GetAccessToken(partyId, tokenUrl);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60);
-                return tokenResponse.AccessToken!;
-            });
-        }
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 60);
+            return tokenResponse.AccessToken!;
+        });
 
         return accessToken;
     }
@@ -41,7 +32,7 @@ public class AccessTokenService(
     {
         try
         {
-            var clientAssertion = authenticationService.CreateClientAssertion(partyId);
+            var clientAssertion = clientAssertionCreator.CreateClientAssertion(partyId);
             var formData = new[]
             {
                 new KeyValuePair<string, string>("grant_type", "client_credentials"),
