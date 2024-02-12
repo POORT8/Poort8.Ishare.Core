@@ -45,7 +45,7 @@ public class CertificateValidator(
 
         var keyUsages = signingCertificate.Extensions.OfType<X509KeyUsageExtension>();
         if (!keyUsages.Any(u =>
-            u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature) || //NOTE: iSHARE uses DigitalSignature and NonRepudiation
+            u.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature) || //NOTE: iSHARE uses DigitalSignature and NonRepudiation, should be only NonRepudiation.
             u.KeyUsages.HasFlag(X509KeyUsageFlags.NonRepudiation)))
         {
             throw new Exception("Signing certificate does not have a digital signature or non-repudiation key usage.");
