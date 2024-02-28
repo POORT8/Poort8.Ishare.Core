@@ -27,12 +27,27 @@ public class SatelliteServiceTests
     }
 
     [Fact]
+    public async void GetAccessTokenAtPartyThrowsSatelliteException()
+    {
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+        var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
+
+        var tokenUrl = $"{options.Value.SatelliteUrl}/connect/token";
+        Func<Task> act = () => accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
+
+        await act.Should()
+            .ThrowAsync<HttpRequestException>() //TODO: Rewrite test such that it throws a SatelliteException
+            .WithMessage("nodename nor servname provided, or not known (dit-is-niet-de-satelliet.nl:443)");
+    }
+
+    [Fact]
     public async Task GetValidTrustedListThrowsSatelliteException()
     {
         var satelliteService = _serviceProvider.GetRequiredService<ISatelliteService>();
 
         Func<Task> act = satelliteService.GetValidTrustedList;
 
+        //TODO: Rewrite test such that satellite service does get a token from the satellite but not the trustedlist
         await act.Should()
             .ThrowAsync<SatelliteException>()
             .WithMessage("Satellite exception - HttpRequestException - Could not get access token from satellite: nodename nor servname provided, or not known (dit-is-niet-de-satelliet.nl:443)");
@@ -48,6 +63,7 @@ public class SatelliteServiceTests
             options.Value.SatelliteId,
             "145dd7c41a2f9b989f16f1250c5a9291094c300590db01903efe1fb1de651b48");
 
+        //TODO: Rewrite test such that satellite service does get a token from the satellite but not the parties
         await act.Should()
             .ThrowAsync<SatelliteException>()
             .WithMessage("Satellite exception - HttpRequestException - Could not get access token from satellite: nodename nor servname provided, or not known (dit-is-niet-de-satelliet.nl:443)");
