@@ -2,83 +2,43 @@
 
 namespace Poort8.Ishare.Core.Models;
 
-public class DelegationEvidence
-{
-    [JsonPropertyName("notBefore")]
-    public int NotBefore { get; set; }
+public record DelegationEvidence(
+    [property: JsonPropertyName("notBefore")] int NotBefore,
+    [property: JsonPropertyName("notOnOrAfter")] int NotOnOrAfter,
+    [property: JsonPropertyName("policyIssuer")] string PolicyIssuer,
+    [property: JsonPropertyName("target")] Target Target,
+    [property: JsonPropertyName("policySets")] IReadOnlyList<PolicySet> PolicySets
+);
 
-    [JsonPropertyName("notOnOrAfter")]
-    public int NotOnOrAfter { get; set; }
+public record Target(
+    [property: JsonPropertyName("accessSubject")] string AccessSubject,
+    [property: JsonPropertyName("environment")] Environment Environment,
+    [property: JsonPropertyName("resource")] Resource Resource,
+    [property: JsonPropertyName("actions")] IReadOnlyList<string> Actions
+);
 
-    [JsonPropertyName("policyIssuer")]
-    public string? PolicyIssuer { get; set; }
+public record Environment(
+    [property: JsonPropertyName("licenses")] IReadOnlyList<string> Licenses,
+    [property: JsonPropertyName("serviceProviders")] IReadOnlyList<string> ServiceProviders
+);
 
-    [JsonPropertyName("target")]
-    public TargetObject? Target { get; set; }
+public record Resource(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("identifiers")] IReadOnlyList<string> Identifiers,
+    [property: JsonPropertyName("attributes")] IReadOnlyList<string> Attributes
+);
 
-    [JsonPropertyName("policySets")]
-    public List<PolicySet>? PolicySets { get; set; }
+public record PolicySet(
+    [property: JsonPropertyName("maxDelegationDepth")] int MaxDelegationDepth,
+    [property: JsonPropertyName("target")] Target Target,
+    [property: JsonPropertyName("policies")] IReadOnlyList<Policy> Policies
+);
 
-    public class PolicySet
-    {
-        [JsonPropertyName("maxDelegationDepth")]
-        public int MaxDelegationDepth { get; set; }
+public record Policy(
+    [property: JsonPropertyName("target")] Target Target,
+    [property: JsonPropertyName("rules")] IReadOnlyList<Rule> Rules
+);
 
-        [JsonPropertyName("target")]
-        public TargetObject? Target { get; set; }
-
-        [JsonPropertyName("policies")]
-        public List<Policy>? Policies { get; set; }
-    }
-
-    public class Policy
-    {
-        [JsonPropertyName("target")]
-        public TargetObject? Target { get; set; }
-
-        [JsonPropertyName("rules")]
-        public List<Rule>? Rules { get; set; }
-    }
-
-    public class Rule
-    {
-        [JsonPropertyName("effect")]
-        public string? Effect { get; set; }
-    }
-
-    public class Resource
-    {
-        [JsonPropertyName("type")]
-        public string? Type { get; set; }
-
-        [JsonPropertyName("identifiers")]
-        public List<string>? Identifiers { get; set; }
-
-        [JsonPropertyName("attributes")]
-        public List<string>? Attributes { get; set; }
-    }
-
-    public class Environment
-    {
-        [JsonPropertyName("licenses")]
-        public List<string>? Licenses { get; set; }
-
-        [JsonPropertyName("serviceProviders")]
-        public List<string>? ServiceProviders { get; set; }
-    }
-
-    public class TargetObject
-    {
-        [JsonPropertyName("accessSubject")]
-        public string? AccessSubject { get; set; }
-
-        [JsonPropertyName("environment")]
-        public Environment? Environment { get; set; }
-
-        [JsonPropertyName("resource")]
-        public Resource? Resource { get; set; }
-
-        [JsonPropertyName("actions")]
-        public List<string>? Actions { get; set; }
-    }
-}
+public record Rule(
+    [property: JsonPropertyName("effect")] string Effect
+);

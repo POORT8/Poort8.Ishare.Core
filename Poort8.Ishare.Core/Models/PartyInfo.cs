@@ -2,194 +2,85 @@
 
 namespace Poort8.Ishare.Core.Models;
 
-public class PartyInfo
-{
-    [JsonPropertyName("party_id")]
-    public string? PartyId { get; set; }
+public record PartyInfo(
+    [property: JsonPropertyName("party_id")] string PartyId,
+    [property: JsonPropertyName("party_name")] string PartyName,
+    [property: JsonPropertyName("capability_url")] string CapabilityUrl,
+    [property: JsonPropertyName("registrar_id")] string RegistrarId,
+    [property: JsonPropertyName("adherence")] Adherence Adherence,
+    [property: JsonPropertyName("additional_info")] AdditionalInfo AdditionalInfo,
+    [property: JsonPropertyName("agreements")] IReadOnlyList<Agreement> Agreements,
+    [property: JsonPropertyName("certificates")] IReadOnlyList<Certificate> Certificates,
+    [property: JsonPropertyName("certifications")] IReadOnlyList<Certification> Certifications, //TODO: SchemeOwner only
+    [property: JsonPropertyName("roles")] IReadOnlyList<RoleObject> Roles,
+    [property: JsonPropertyName("authregistery")] IReadOnlyList<Authregistery> Authregistery,
+    [property: JsonPropertyName("spor")] Spor Spor
+);
 
-    [JsonPropertyName("party_name")]
-    public string? PartyName { get; set; }
+public record Adherence(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("start_date")] DateTime StartDate,
+    [property: JsonPropertyName("end_date")] DateTime EndDate
+);
 
-    [JsonPropertyName("adherence")]
-    public AdherenceObject? Adherence { get; set; }
+public record AdditionalInfo(
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("logo")] string Logo,
+    [property: JsonPropertyName("website")] string Website,
+    [property: JsonPropertyName("company_phone")] string CompanyPhone,
+    [property: JsonPropertyName("company_email")] string CompanyEmail,
+    [property: JsonPropertyName("publicly_publishable")] string PubliclyPublishable,
+    [property: JsonPropertyName("countriesOfOperation")] IReadOnlyList<object> CountriesOfOperation,
+    [property: JsonPropertyName("sectorIndustry")] IReadOnlyList<object> SectorIndustry,
+    [property: JsonPropertyName("tags")] string Tags
+);
 
-    [JsonPropertyName("certifications")]
-    public List<Certification>? Certifications { get; set; } //TODO: Remove when migrated to Satellite
+public record Agreement(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("sign_date")] DateTime SignDate,
+    [property: JsonPropertyName("expiry_date")] DateTime ExpiryDate,
+    [property: JsonPropertyName("hash_file")] string HashFile,
+    [property: JsonPropertyName("framework")] string Framework,
+    [property: JsonPropertyName("dataspace_id")] string DataspaceId,
+    [property: JsonPropertyName("dataspace_title")] string DataspaceTitle,
+    [property: JsonPropertyName("complaiancy_verified")] string ComplaiancyVerified
+);
 
-    [JsonPropertyName("capability_url")]
-    public string? CapabilityUrl { get; set; }
+public record Certificate(
+    [property: JsonPropertyName("subject_name")] string SubjectName,
+    [property: JsonPropertyName("certificate_type")] string CertificateType,
+    [property: JsonPropertyName("enabled_from")] DateTime EnabledFrom,
+    [property: JsonPropertyName("x5c")] string X5c,
+    [property: JsonPropertyName("x5t#s256")] string X5tS256
+);
 
-    [JsonPropertyName("registrar_id")]
-    public string? RegistrarId { get; set; }
+//TODO: SchemeOwner only
+public record Certification(
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("start_date")] DateTime StartDate,
+    [property: JsonPropertyName("end_date")] DateTime EndDate,
+    [property: JsonPropertyName("loa")] int Loa
+);
 
-    [JsonPropertyName("spor")]
-    public SporObject? Spor { get; set; }
+public record RoleObject(
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("start_date")] DateTime StartDate,
+    [property: JsonPropertyName("end_date")] DateTime EndDate,
+    [property: JsonPropertyName("loa")] string Loa,
+    [property: JsonPropertyName("complaiancy_verified")] string ComplaiancyVerified,
+    [property: JsonPropertyName("legal_adherence")] string LegalAdherence
+);
 
-    [JsonPropertyName("additional_info")]
-    public AdditionalInfoObject? AdditionalInfo { get; set; }
+public record Authregistery(
+    [property: JsonPropertyName("authorizationRegistryName")] string AuthorizationRegistryName,
+    [property: JsonPropertyName("authorizationRegistryID")] string AuthorizationRegistryID,
+    [property: JsonPropertyName("authorizationRegistryUrl")] string AuthorizationRegistryUrl,
+    [property: JsonPropertyName("dataspaceID")] string DataspaceID,
+    [property: JsonPropertyName("dataspaceName")] string DataspaceName
+);
 
-    [JsonPropertyName("agreements")]
-    public List<Agreement>? Agreements { get; set; }
-
-    [JsonPropertyName("certificates")]
-    public List<Certificate>? Certificates { get; set; }
-
-    [JsonPropertyName("roles")]
-    public List<RoleObject>? Roles { get; set; }
-
-    [JsonPropertyName("auth_registries")]
-    public List<AuthRegistry>? AuthRegistries { get; set; }
-
-    public class AdherenceObject
-    {
-        [JsonPropertyName("status")]
-        public string? Status { get; set; }
-
-        [JsonPropertyName("start_date")]
-        public DateTime StartDate { get; set; }
-
-        [JsonPropertyName("end_date")]
-        public DateTime EndDate { get; set; }
-    }
-
-    public class Certification //TODO: Remove when migrated to Satellite
-    {
-        [JsonPropertyName("role")]
-        public string? Role { get; set; }
-
-        [JsonPropertyName("start_date")]
-        public DateTime StartDate { get; set; }
-
-        [JsonPropertyName("end_date")]
-        public DateTime EndDate { get; set; }
-
-        [JsonPropertyName("loa")]
-        public int Loa { get; set; }
-    }
-
-    public class SporObject
-    {
-        [JsonPropertyName("signed_request")]
-        public string? SignedRequest { get; set; }
-    }
-
-    public class AdditionalInfoObject
-    {
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
-
-        [JsonPropertyName("logo")]
-        public string? Logo { get; set; }
-
-        [JsonPropertyName("website")]
-        public string? Website { get; set; }
-
-        [JsonPropertyName("company_phone")]
-        public string? CompanyPhone { get; set; }
-
-        [JsonPropertyName("company_email")]
-        public string? CompanyEmail { get; set; }
-
-        [JsonPropertyName("publicly_publishable")]
-        public string? PubliclyPublishable { get; set; }
-
-        [JsonPropertyName("countriesOfOperation")]
-        public List<object>? CountriesOfOperation { get; set; }
-
-        [JsonPropertyName("sectorIndustry")]
-        public List<object>? SectorIndustry { get; set; }
-
-        [JsonPropertyName("tags")]
-        public string? Tags { get; set; }
-    }
-
-    public class Agreement
-    {
-        [JsonPropertyName("type")]
-        public string? Type { get; set; }
-
-        [JsonPropertyName("title")]
-        public string? Title { get; set; }
-
-        [JsonPropertyName("status")]
-        public string? Status { get; set; }
-
-        [JsonPropertyName("sign_date")]
-        public DateTime SignDate { get; set; }
-
-        [JsonPropertyName("expiry_date")]
-        public DateTime ExpiryDate { get; set; }
-
-        [JsonPropertyName("hash_file")]
-        public string? HashFile { get; set; }
-
-        [JsonPropertyName("framework")]
-        public string? Framework { get; set; }
-
-        [JsonPropertyName("dataspace_id")]
-        public string? DataspaceId { get; set; }
-
-        [JsonPropertyName("dataspace_title")]
-        public string? DataspaceTitle { get; set; }
-
-        [JsonPropertyName("complaiancy_verified")]
-        public string? ComplaiancyVerified { get; set; }
-    }
-
-    public class Certificate
-    {
-        [JsonPropertyName("subject_name")]
-        public string? SubjectName { get; set; }
-
-        [JsonPropertyName("certificate_type")]
-        public string? CertificateType { get; set; }
-
-        [JsonPropertyName("enabled_from")]
-        public DateTime EnabledFrom { get; set; }
-
-        [JsonPropertyName("x5c")]
-        public string? X5c { get; set; }
-
-        [JsonPropertyName("x5t#s256")]
-        public string? X5tS256 { get; set; }
-    }
-
-    public class RoleObject
-    {
-        [JsonPropertyName("role")]
-        public string? Role { get; set; }
-
-        [JsonPropertyName("start_date")]
-        public DateTime StartDate { get; set; }
-
-        [JsonPropertyName("end_date")]
-        public DateTime EndDate { get; set; }
-
-        [JsonPropertyName("loa")]
-        public string? LOA { get; set; }
-
-        [JsonPropertyName("complaiancy_verified")]
-        public string? ComplaiancyVerified { get; set; }
-
-        [JsonPropertyName("legal_adherence")]
-        public string? LegalAdherence { get; set; }
-    }
-
-    public class AuthRegistry
-    {
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
-
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
-        [JsonPropertyName("url")]
-        public string? Url { get; set; }
-
-        [JsonPropertyName("dataspace_id")]
-        public string? DataspaceId { get; set; }
-
-        [JsonPropertyName("dataspace_name")]
-        public string? DataspaceName { get; set; }
-    }
-}
+public record Spor(
+    [property: JsonPropertyName("signed_request")] string SignedRequest
+);
