@@ -46,6 +46,11 @@ public class SatelliteService(
             logger.LogInformation("Received trusted list from satellite with {trustedListCount} values.", trustedList.Count());
             return trustedList;
         }
+        catch (HttpRequestException e)
+        {
+            logger.LogError("HttpRequestException - Could not get trusted list from satellite: {msg}", e.Message);
+            throw new SatelliteException($"HttpRequestException - Could not get trusted list from satellite: {e.Message}", e);
+        }
         catch (Exception e)
         {
             logger.LogError("Could not get trusted list from satellite: {msg}", e.Message);
@@ -121,6 +126,11 @@ public class SatelliteService(
             logger.LogInformation("Received party info from satellite with {partyInfoCount} values.", partyInfos.Count());
             return partyInfos;
         }
+        catch (HttpRequestException e)
+        {
+            logger.LogError("HttpRequestException - Could not get party info from satellite: {msg}", e.Message);
+            throw new SatelliteException($"HttpRequestException - Could not get party info from satellite: {e.Message}", e);
+        }
         catch (Exception e)
         {
             logger.LogError("Could not get party info from satellite: {msg}", e.Message);
@@ -165,7 +175,17 @@ public class SatelliteService(
     private async Task SetAuthorizationHeader()
     {   
         var tokenUrl = GetUrl("connect/token");
-        var token = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
+        string token;
+        try
+        {
+            token = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
+        }
+        catch (HttpRequestException e)
+        {
+            logger.LogError("HttpRequestException - Could not get access token from satellite: {msg}", e.Message);
+            throw new SatelliteException($"Could not get access token from satellite: {e.Message}", e);
+        }
+        
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
