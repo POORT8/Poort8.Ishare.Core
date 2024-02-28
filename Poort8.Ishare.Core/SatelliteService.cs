@@ -183,7 +183,7 @@ public class SatelliteService(
         catch (HttpRequestException e)
         {
             logger.LogError("HttpRequestException - Could not get access token from satellite: {msg}", e.Message);
-            throw new SatelliteException($"Could not get access token from satellite: {e.Message}", e);
+            throw new SatelliteException($"HttpRequestException - Could not get access token from satellite: {e.Message}", e);
         }
         
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

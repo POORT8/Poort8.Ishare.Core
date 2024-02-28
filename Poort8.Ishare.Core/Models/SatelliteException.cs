@@ -1,7 +1,7 @@
 ﻿namespace Poort8.Ishare.Core.Models;
 
 [Serializable]
-internal class SatelliteException : Exception
+public class SatelliteException : Exception
 {
     public SatelliteException()
     {
