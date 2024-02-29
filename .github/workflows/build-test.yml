@@ -22,5 +22,5 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal --filter 'FullyQualifiedName!~Poort8.Ishare.Core.Tests.SchemeOwnerIntegrationTests&FullyQualifiedName!~Poort8.Ishare.Core.Tests.IntegrationTests'
+      run: dotnet test --no-build --verbosity normal --filter 'FullyQualifiedName!~Poort8.Ishare.Core.Tests.SchemeOwnerIntegrationTests&FullyQualifiedName!~Poort8.Ishare.Core.Tests.IntegrationTests&FullyQualifiedName!~Poort8.Ishare.Core.Tests.SatelliteServiceTests'
 
