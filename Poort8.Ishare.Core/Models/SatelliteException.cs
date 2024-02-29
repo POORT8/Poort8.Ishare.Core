@@ -7,11 +7,11 @@ public class SatelliteException : Exception
     {
     }
 
-    public SatelliteException(string? message) : base("Satellite exception - " + message)
+    public SatelliteException(string message) : base("Satellite exception - " + message)
     {
     }
 
-    public SatelliteException(string? message, Exception? innerException) : base("Satellite exception - " + message, innerException)
+    public SatelliteException(string message, Exception? innerException) : base("Satellite exception - " + message, innerException)
     {
     }
 }
