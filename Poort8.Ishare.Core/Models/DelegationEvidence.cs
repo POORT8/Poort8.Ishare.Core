@@ -16,15 +16,15 @@ public record AccessSubjectTarget(
 
 public record PolicySet(
     [property: JsonPropertyName("maxDelegationDepth")] int MaxDelegationDepth,
-    [property: JsonPropertyName("target")] EnvironmentTarget Target,
+    [property: JsonPropertyName("target")] LicenseTarget Target,
     [property: JsonPropertyName("policies")] IReadOnlyList<Policy> Policies
 );
 
-public record EnvironmentTarget(
-    [property: JsonPropertyName("environment")] Environment Environment
+public record LicenseTarget(
+    [property: JsonPropertyName("environment")] LicenseEnvironment Environment
 );
 
-public record Environment(
+public record LicenseEnvironment(
     [property: JsonPropertyName("licenses")] IReadOnlyList<string> Licenses
 );
 
@@ -35,6 +35,7 @@ public record Policy(
 
 public record ResourceTarget(
     [property: JsonPropertyName("resource")] Resource Resource,
+    [property: JsonPropertyName("environment")] ServiceProviderEnvironment Environment,
     [property: JsonPropertyName("actions")] IReadOnlyList<string> Actions
 );
 
@@ -42,6 +43,10 @@ public record Resource(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("identifiers")] IReadOnlyList<string> Identifiers,
     [property: JsonPropertyName("attributes")] IReadOnlyList<string> Attributes
+);
+
+public record ServiceProviderEnvironment(
+    [property: JsonPropertyName("serviceProviders")] IReadOnlyList<string> ServiceProviders
 );
 
 public record Rule(

@@ -68,50 +68,53 @@ public class AuthorizationRegistryServiceTests
     private static DelegationEvidence CreateFakeDelegationEvidence()
     {
         var ruleFaker = new Faker<Rule>()
-                    .CustomInstantiator(f => new Rule("Permit"));
+            .CustomInstantiator(f => new Rule("Permit"));
+
+        var serviceProviderEnvironmentFaker = new Faker<ServiceProviderEnvironment>()
+            .CustomInstantiator(f => new ServiceProviderEnvironment(
+                new List<string> { f.Company.CompanyName() }.AsReadOnly()));
 
         var resourceFaker = new Faker<Resource>()
             .CustomInstantiator(f => new Resource(
                 f.Lorem.Word(),
                 new List<string> { f.Lorem.Word() }.AsReadOnly(),
-                new List<string> { f.Lorem.Word() }.AsReadOnly()
-            ));
+                new List<string> { f.Lorem.Word() }.AsReadOnly()));
 
-        var environmentFaker = new Faker<Models.Environment>()
-            .CustomInstantiator(f => new Models.Environment(
-                new List<string> { f.Lorem.Word() }.AsReadOnly(),
-                new List<string> { f.Company.CompanyName() }.AsReadOnly()
-            ));
-
-        var targetFaker = new Faker<Target>()
-            .CustomInstantiator(f => new Target(
-                f.Lorem.Word(),
-                environmentFaker.Generate(),
+        var resourceTargetFaker = new Faker<ResourceTarget>()
+            .CustomInstantiator(f => new ResourceTarget(
                 resourceFaker.Generate(),
-                new List<string> { f.Lorem.Word() }.AsReadOnly()
-            ));
+                serviceProviderEnvironmentFaker.Generate(),
+                new List<string> { f.Lorem.Word() }.AsReadOnly()));
 
         var policyFaker = new Faker<Policy>()
             .CustomInstantiator(f => new Policy(
-                targetFaker.Generate(),
-                new List<Rule> { ruleFaker.Generate() }.AsReadOnly()
-            ));
+                resourceTargetFaker.Generate(),
+                new List<Rule> { ruleFaker.Generate() }.AsReadOnly()));
+
+        var licenseEnvironmentFaker = new Faker<LicenseEnvironment>()
+            .CustomInstantiator(f => new LicenseEnvironment(
+                new List<string> { f.Lorem.Word() }.AsReadOnly()));
+
+        var licenseTargetFaker = new Faker<LicenseTarget>()
+            .CustomInstantiator(f => new LicenseTarget(
+                licenseEnvironmentFaker.Generate()));
 
         var policySetFaker = new Faker<PolicySet>()
             .CustomInstantiator(f => new PolicySet(
                 f.Random.Int(0, 10),
-                targetFaker.Generate(),
-                new List<Policy> { policyFaker.Generate() }.AsReadOnly()
-            ));
+                licenseTargetFaker.Generate(),
+                new List<Policy> { policyFaker.Generate() }.AsReadOnly()));
+
+        var accessSubjectTargetFaker = new Faker<AccessSubjectTarget>()
+            .CustomInstantiator(f => new AccessSubjectTarget(f.Lorem.Word()));
 
         var delegationEvidenceFaker = new Faker<DelegationEvidence>()
             .CustomInstantiator(f => new DelegationEvidence(
                 f.Random.Int(0, 100),
                 f.Random.Int(101, 200),
                 f.Company.CompanyName(),
-                targetFaker.Generate(),
-                new List<PolicySet> { policySetFaker.Generate() }.AsReadOnly()
-            ));
+                accessSubjectTargetFaker.Generate(),
+                new List<PolicySet> { policySetFaker.Generate() }.AsReadOnly()));
 
         var fakeDelegationEvidence = delegationEvidenceFaker.Generate();
         return fakeDelegationEvidence;
