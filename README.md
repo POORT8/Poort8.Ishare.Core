@@ -20,9 +20,15 @@ In the `.NET` environment of `Poort8.Ishare.Core`, configuration is streamlined 
 - `CertificateChain`: The full chain of your iSHARE certificate, excluding the certificate boundaries.
 - `CertificateChainPassword`: The password for your certificate chain, if required.
 
-## Certificates and Private Keys Management
+### Certificates and Private Keys Management
 
-Certificates and private keys are crucial for the secure operation of iSHARE functionalities. `Poort8.Ishare.Core` utilizes Azure Key Vault for the secure management of these cryptographic materials, ensuring that sensitive information is stored securely and accessed in a controlled manner.
+The `Poort8.Ishare.Core` library is designed with security best practices in mind, utilizing Azure Key Vault for the secure management of certificates and private keys. This approach ensures that sensitive information, such as the iSHARE certificate chain and private keys, are securely stored and accessed:
+
+- **Azure Key Vault**: Store your iSHARE certificate and private key in Azure Key Vault. Configure the Key Vault name and secrets in `IshareCoreOptions`.
+- **Certificate Name**: Specify the name of the certificate stored within Azure Key Vault in the `CertificateName` setting.
+- **Access Control**: Ensure that your application has the necessary permissions to access the Key Vault and retrieve the certificate and key.
+
+This method enhances the security posture by avoiding direct embedding of sensitive cryptographic material in the application's configuration or codebase.
 
 ## Key Classes and Methods
 
