@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace Poort8.Ishare.Core.Tests;
 public class ClientAssertionCreatorTests
@@ -37,6 +38,20 @@ public class ClientAssertionCreatorTests
 
         token.Should().NotBeNullOrEmpty();
         await DoBasicTokenChecks(token);
+    }
+
+    [Fact]
+    public async Task CreateTokenShouldReturnValidToken()
+    {
+        var claims = new List<Claim>{ new("delegation_token", "ey...") };
+        var token = _clientAssertionCreator.CreateToken("aud", claims);
+
+        token.Should().NotBeNullOrEmpty();
+        await DoBasicTokenChecks(token);
+
+        var handler = new JsonWebTokenHandler();
+        var decodedToken = handler.ReadJsonWebToken(token);
+        decodedToken.Claims.Select(c => c.Type.Equals("delegation_token")).Should().NotBeEmpty();
     }
 
     private async Task DoBasicTokenChecks(string token)

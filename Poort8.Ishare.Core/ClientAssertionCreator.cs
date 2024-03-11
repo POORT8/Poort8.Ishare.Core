@@ -62,4 +62,32 @@ public class ClientAssertionCreator(
 
         return tokenHandler.WriteToken(token);
     }
+
+    public string CreateToken(string audience, IReadOnlyList<Claim>? additionalClaims)
+    {
+        var claims = new ClaimsIdentity();
+        claims.AddClaim(new Claim("sub", clientId));
+        claims.AddClaim(new Claim("jti", Guid.NewGuid().ToString()));
+
+        foreach (var claim in additionalClaims ?? [])
+        {
+            claims.AddClaim(claim);
+        }
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateJwtSecurityToken(
+            issuer: clientId,
+            audience: audience,
+            subject: claims,
+            notBefore: DateTime.UtcNow,
+            expires: DateTime.UtcNow.AddSeconds(30),
+            issuedAt: DateTime.UtcNow,
+            signingCredentials: certificateProvider.GetSigningCredentials());
+
+        token.Header.Remove("kid");
+        token.Header.Remove("x5t");
+        token.Header.Add("x5c", certificateProvider.GetChainString().ToList());
+
+        return tokenHandler.WriteToken(token);
+    }
 }
