@@ -72,4 +72,14 @@ public class AuthenticationServiceTests
 
         await act.Should().NotThrowAsync();
     }
+
+    [Fact]
+    public async Task ValidateServiceConsumerClientAssertionValidationInvalidExpShouldFail()
+    {
+        var token = Fixtures.CreateServiceConsumerClientAssertionInvalidExp("serviceConsumer", "serviceProvider");
+
+        Func<Task> act = () => _authenticationService.ValidateClientAssertion(token, "serviceConsumer");
+
+        await act.Should().ThrowAsync<Exception>();
+    }
 }

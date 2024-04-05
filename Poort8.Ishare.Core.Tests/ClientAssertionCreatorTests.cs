@@ -68,8 +68,6 @@ public class ClientAssertionCreatorTests
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _certificateProvider.GetSigningCredentials().Key,
             RequireExpirationTime = true,
-            PropertyBag = new Dictionary<string, object> { { "expSeconds", 30 } },
-            LifetimeValidator = AuthenticationService.ClientAssertionLifetimeValidator,
             RequireSignedTokens = true
         };
 
