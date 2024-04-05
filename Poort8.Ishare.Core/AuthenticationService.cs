@@ -57,8 +57,8 @@ public class AuthenticationService(
 
             var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 
-            ValidateIssAndSub(logger, token, validIssuer, validationResult);
-            ValidateIatAndExp(logger, token, validIssuer, validationResult);
+            ValidateIssAndSub(token, validIssuer, validationResult);
+            ValidateIatAndExp(token, validIssuer, validationResult);
 
             //TODO: Except from the alg, typ and x5c parameter, the JWT header SHALL NOT contain other header parameters. Check with iSHARE foundation.
         }
@@ -69,7 +69,7 @@ public class AuthenticationService(
         }
     }
 
-    private static void ValidateIssAndSub(ILogger<AuthenticationService> logger, string token, string validIssuer, TokenValidationResult validationResult)
+    private void ValidateIssAndSub(string token, string validIssuer, TokenValidationResult validationResult)
     {
         if (validationResult.Claims["sub"].ToString() != validationResult.Claims["iss"].ToString())
         {
@@ -78,7 +78,7 @@ public class AuthenticationService(
         }
     }
 
-    private static void ValidateIatAndExp(ILogger<AuthenticationService> logger, string token, string validIssuer, TokenValidationResult validationResult)
+    private void ValidateIatAndExp(string token, string validIssuer, TokenValidationResult validationResult)
     {
         if (validationResult.Claims.TryGetValue("exp", out var expClaim) &&
             validationResult.Claims.TryGetValue("iat", out var iatClaim) &&
@@ -94,7 +94,7 @@ public class AuthenticationService(
         else
         {
             logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The 'exp' or 'iat' claim is missing.");
-            throw new Exception("The 'exp' or 'iat' claim is missing.");
+            throw new Exception("The 'exp' or 'iat' claim is missing or is not of type long.");
         }
     }
 
