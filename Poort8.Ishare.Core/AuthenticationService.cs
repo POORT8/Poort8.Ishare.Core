@@ -49,8 +49,6 @@ public class AuthenticationService(
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new X509SecurityKey(signingCertificate),
                 RequireExpirationTime = true,
-                PropertyBag = new Dictionary<string, object> { { "expSeconds", 30 } },
-                LifetimeValidator = ClientAssertionLifetimeValidator,
                 ClockSkew = TimeSpan.FromSeconds(10),
                 RequireSignedTokens = true,
                 ValidateTokenReplay = true,
@@ -59,11 +57,8 @@ public class AuthenticationService(
 
             var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 
-            if (validationResult.Claims["sub"].ToString() != validationResult.Claims["iss"].ToString())
-            {
-                logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The 'iss' claim is not equal to the 'sub' claim.");
-                throw new Exception("The 'iss' claim is not equal to the 'sub' claim.");
-            }
+            ValidateIssAndSub(token, validIssuer, validationResult);
+            ValidateIatAndExp(token, validIssuer, validationResult);
 
             //TODO: Except from the alg, typ and x5c parameter, the JWT header SHALL NOT contain other header parameters. Check with iSHARE foundation.
         }
@@ -74,6 +69,35 @@ public class AuthenticationService(
         }
     }
 
+    private void ValidateIssAndSub(string token, string validIssuer, TokenValidationResult validationResult)
+    {
+        if (validationResult.Claims["sub"].ToString() != validationResult.Claims["iss"].ToString())
+        {
+            logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The 'iss' claim is not equal to the 'sub' claim.");
+            throw new Exception("The 'iss' claim is not equal to the 'sub' claim.");
+        }
+    }
+
+    private void ValidateIatAndExp(string token, string validIssuer, TokenValidationResult validationResult)
+    {
+        if (validationResult.Claims.TryGetValue("exp", out var expClaim) &&
+            validationResult.Claims.TryGetValue("iat", out var iatClaim) &&
+            long.TryParse(expClaim.ToString(), out var exp) &&
+            long.TryParse(iatClaim.ToString(), out var iat))
+        {
+            if (exp - iat != 30)
+            {
+                logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The difference between 'exp' and 'iat' is not 30 seconds.");
+                throw new Exception("The difference between 'exp' and 'iat' is not 30 seconds.");
+            }
+        }
+        else
+        {
+            logger.LogError("Token validation error, for valid issuer {validIssuer}, and token {token}. With message: {msg}", validIssuer, token, "The 'exp' or 'iat' claim is missing.");
+            throw new Exception("The 'exp' or 'iat' claim is missing or is not of type long.");
+        }
+    }
+
     public static string[] GetCertificateChain(JsonWebToken token)
     {
         var hasX5c = token.TryGetHeaderValue("x5c", out object? x5c);
@@ -81,11 +105,5 @@ public class AuthenticationService(
 
         var x5cJsonElement = (JsonElement)x5c!;
         return x5cJsonElement.EnumerateArray().Select(c => c.ToString()).ToArray();
-    }
-
-    public static bool ClientAssertionLifetimeValidator(DateTime? notBefore, DateTime? expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
-    {
-        validationParameters.PropertyBag.TryGetValue("expSeconds", out object? expSeconds);
-        return ((DateTime)expires! - (DateTime)notBefore!).TotalSeconds == (int)expSeconds!;
     }
 }

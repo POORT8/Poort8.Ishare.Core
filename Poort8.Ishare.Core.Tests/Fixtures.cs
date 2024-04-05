@@ -75,4 +75,30 @@ public class Fixtures
 
         return tokenHandler.WriteToken(token);
     }
+
+    public static string CreateServiceConsumerClientAssertionInvalidExp(string issuer, string audience)
+    {
+        var options = GetServiceConsumerCertificateTestOptions();
+        var certificateProvider = new CertificateProvider(NullLogger<CertificateProvider>.Instance, options);
+
+        var claims = new ClaimsIdentity();
+        claims.AddClaim(new Claim("sub", issuer));
+        claims.AddClaim(new Claim("jti", Guid.NewGuid().ToString()));
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateJwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            subject: claims,
+            notBefore: DateTime.UtcNow,
+            expires: DateTime.UtcNow.AddSeconds(60),
+            issuedAt: DateTime.UtcNow,
+            signingCredentials: certificateProvider.GetSigningCredentials());
+
+        token.Header.Remove("kid");
+        token.Header.Remove("x5t");
+        token.Header.Add("x5c", certificateProvider.GetChainString().ToList());
+
+        return tokenHandler.WriteToken(token);
+    }
 }

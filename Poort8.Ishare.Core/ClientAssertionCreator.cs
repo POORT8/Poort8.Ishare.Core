@@ -51,7 +51,6 @@ public class ClientAssertionCreator(
             issuer: clientId,
             audience: audience,
             subject: claims,
-            notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddSeconds(30),
             issuedAt: DateTime.UtcNow,
             signingCredentials: certificateProvider.GetSigningCredentials());
@@ -79,7 +78,6 @@ public class ClientAssertionCreator(
             issuer: clientId,
             audience: audience,
             subject: claims,
-            notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddSeconds(30),
             issuedAt: DateTime.UtcNow,
             signingCredentials: certificateProvider.GetSigningCredentials());
