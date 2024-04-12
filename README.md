@@ -3,7 +3,7 @@
 # Poort8.Ishare.Core
 This .NET library can be used to add iSHARE functionality to your applications. It is used by Poort8 in its applications, undependently reviewed and open sourced under the MPL-2.0 license.
 
-The most common use cases for the use of this package are for [Service (Data) Consumers](##service-consumers) and [Service (Data) Providers](##service-providers).
+The most common use cases for the use of this package are for [Service (Data) Consumers](#service-consumers) and [Service (Data) Providers](#service-providers).
 
 ## Installation
 ```
