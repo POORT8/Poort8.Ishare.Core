@@ -1,71 +1,102 @@
 [![Actions Status](https://github.com/POORT8/Poort8.Ishare.Core/workflows/Build%20and%20test/badge.svg)](https://github.com/POORT8/Poort8.Ishare.Core/actions) [![Nuget](https://img.shields.io/nuget/v/Poort8.Ishare.Core)](https://www.nuget.org/packages/Poort8.Ishare.Core/)
 
 # Poort8.Ishare.Core
+This .NET library can be used to add iSHARE functionality to your applications. It is used by Poort8 in its applications, undependently reviewed and open sourced under the MPL-2.0 license.
 
-This .NET library encapsulates the core iSHARE functionality, tailored for .NET applications, to interact with an Authorization Registry. It leverages Microsoft's .NET ecosystem, including Azure services, to provide a robust and secure way to handle authorization and authentication via iSHARE standards.
+The most common use cases for the use of this package are for [Service (Data) Consumers](## Service Consumers) and [Service (Data) Providers](## Service Providers) .
 
-_Disclaimer: This library is intended for prototyping and development purposes. Ensure thorough testing and validation for production deployments._
-
-## Configuration
-
-In the `.NET` environment of `Poort8.Ishare.Core`, configuration is streamlined through the `IshareCoreOptions` class, aligned with settings in `appsettings.json`. Key configuration properties encompass:
-
-- `AuthorizationRegistryUrl`: URL of the Authorization Registry.
-- `AuthorizationRegistryId`: EORI of the Authorization Registry (for example, `EU.EORI.NL000000001`).
-- `ClientId`: Your EORI (for example, `EU.EORI.NL000000002`).
-- Azure KeyVault settings for securely managing certificates and keys.
-- `CertificateName`: Name of the certificate stored in Azure KeyVault or locally.
-- `Certificate`: The text value of your iSHARE certificate, excluding the `-----BEGIN CERTIFICATE-----` prefix and `-----END CERTIFICATE-----` postfix.
-- `CertificatePassword`: The password for your certificate, if applicable.
-- `CertificateChain`: The full chain of your iSHARE certificate, excluding the certificate boundaries.
-- `CertificateChainPassword`: The password for your certificate chain, if required.
-
-### Certificates and Private Keys Management
-
-The `Poort8.Ishare.Core` library is designed with security best practices in mind, utilizing Azure Key Vault for the secure management of certificates and private keys. This approach ensures that sensitive information, such as the iSHARE certificate chain and private keys, are securely stored and accessed:
-
-- **Azure Key Vault**: Store your iSHARE certificate and private key in Azure Key Vault. Configure the Key Vault name and secrets in `IshareCoreOptions`.
-- **Certificate Name**: Specify the name of the certificate stored within Azure Key Vault in the `CertificateName` setting.
-- **Access Control**: Ensure that your application has the necessary permissions to access the Key Vault and retrieve the certificate and key.
-
-This method enhances the security posture by avoiding direct embedding of sensitive cryptographic material in the application's configuration or codebase.
-
-## Key Classes and Methods
-
-The .NET library provides functionalities essential for interacting with an iSHARE-compliant Authorization Registry:
-
-### AccessTokenService
-- **GetAccessTokenAtParty**: Retrieves or caches an access token for interacting with a specific party's Authorization Registry.
-
-### AuthenticationService
-- **ValidateToken**: Validates JWT tokens for authenticity and integrity.
-
-### AuthorizationRegistryService
-- **GetDelegationEvidence**: Retrieves delegation evidence from the Authorization Registry.
-- **VerifyAccess**: Evaluates if the specified access rights to a resource are granted.
-
-## Usage Example
-
-```csharp
-var accessTokenService = serviceProvider.GetService<AccessTokenService>();
-var authorizationRegistryService = serviceProvider.GetService<AuthorizationRegistryService>();
-var partyId = "EU.EORI.NL000000003";
-var accessToken = await accessTokenService.GetAccessTokenAtParty(partyId);
-var delegationEvidence = await authorizationRegistryService.GetDelegationEvidence(accessToken, "GS1.CONTAINER", "180621.CONTAINER-Z", "ISHARE.READ");
-var hasAccess = authorizationRegistryService.VerifyAccess(delegationEvidence, partyId, "GS1.CONTAINER", "180621.CONTAINER-Z", "ISHARE.READ");
-Console.WriteLine($"Access Granted: {hasAccess}");
+## Installation
+```
+dotnet add package Poort8.Ishare.Core
 ```
 
-## About
+An extension method is available to register the services in, for example, a ASP.NET application:
+```
+builder.Services.AddIshareCoreServices(builder.Configuration);
+```
 
-`Poort8.Ishare.Core` is a .NET library developed to facilitate secure and standardized authorization mechanisms within the iSHARE scheme, emphasizing integration with Azure services for enhanced security and scalability.
+## Configuration
+Add this configuration to the application environment:
 
-## Resources
+- `ClientId`: Your EORI (for example, `EU.EORI.NL000000002`).
+- `SatelliteId `: The EORI of the dataspace satellite (for example, `EU.EORI.NL000000001`).
+- `SatelliteUrl `: URL of the dataspace satellite.
+- `AuthorizationRegistryId`: Optional. EORI of the authorization registry (for example, `EU.EORI.NL000000001`).
+- `AuthorizationRegistryUrl`: Optional. URL of the authorization registry.
 
-- [iSHARE Scheme](https://ishareworks.org)
-- [.NET Documentation](https://docs.microsoft.com/en-us/dotnet/)
-- [Azure Key Vault Documentation](https://docs.microsoft.com/en-us/azure/key-vault/)
+Choose either Azure Key Vault or certificates from configuration.
+
+### Azure Key Vault:
+- `AzureKeyVaultUrl`: URL of your Azure Key Vault.
+- `CertificateName`: Name of the certificate stored in Azure Key Vault.
+
+### From configuration:
+- `Certificate`: The `pfx` or `p12` certificate file as a base64 encoded string.
+- `CertificatePassword`: The password for your certificate, if applicable.
+- `CertificateChain`: The full chain of your iSHARE certificate, excluding the certificate boundaries, as a comma separated base64 encoded string.
+- `CertificateChainPassword`: The password for your certificate chain, if applicable.
+
+### Usage
+This section provides a brief overview of how to use the main interfaces in the Poort8.Ishare.Core library. Each example demonstrates a key functionality provided by the interfaces.
+
+#### Access Token Service
+```
+string token = await accessTokenService.GetAccessTokenAtParty("eori", "connectTokenUrl");
+```
+
+#### Authentication Service
+```
+await authenticationService.ValidateClientAssertion("clientAssertion", "clientIdHeader");
+
+await authenticationService.ValidateToken("token", "validIssuer");
+```
+
+#### Authorization Registry Service
+```
+DelegationEvidence evidence = await authorizationRegistryService.GetDelegationEvidence(new DelegationMask());
+
+bool isPermitted = authorizationRegistryService.VerifyDelegationEvidencePermit(delegationEvidence, "validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction");
+```
+
+#### Client Assertion Creator
+```
+string clientAssertion = clientAssertionCreator.CreateClientAssertion("eori");
+
+var claims = new List<Claim> { new Claim(ClaimTypes.Name, "exampleName") };
+string token = clientAssertionCreator.CreateToken("eori", claims);
+```
+
+#### Satellite Service
+```
+PartyInfo partyInfo = await satelliteService.VerifyParty("eori", "certificateThumbprint");
+
+IEnumerable<TrustedListAuthority> trustedList = await satelliteService.GetValidTrustedList();
+```
+
+## Service Providers
+Create an API project with the following endpoints:
+
+### Token endpoint
+```/connect/token```: [iSHARE docs](https://dev.ishareworks.org/common/token.html)
+
+In this endpoint ```await authenticationService.ValidateClientAssertion(request.ClientAssertion, request.ClientId);``` can be used to validate the client assertion. This method validates the token and does party and certificate checks using the dataspace satellite.
+
+This endpoint should create an opaque access token to the consumer.
+
+### Capabilities endpoint
+```/capabilities```: [iSHARE docs](https://dev.ishareworks.org/common/capabilities.html)
+
+Required endpoint which provides service information.
+
+### Service (Data) endpoint(s)
+```/[service]```: [iSHARE docs](https://dev.ishareworks.org/service-provider/service.html)
+
+The access token should be validated first, this is not part of this library.
+
+The optional delegation envidence can be validated using ```bool isPermitted = authorizationRegistryService.VerifyDelegationEvidencePermit(delegationEvidence, "validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction");```.
+
+## Service Consumers
+TODO
 
 ## License
-
 This project is licensed under the MPL-2.0 license - see the LICENSE file for details.
