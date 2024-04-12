@@ -3,7 +3,7 @@
 # Poort8.Ishare.Core
 This .NET library can be used to add iSHARE functionality to your applications. It is used by Poort8 in its applications, undependently reviewed and open sourced under the MPL-2.0 license.
 
-The most common use cases for the use of this package are for [Service (Data) Consumers](## Service Consumers) and [Service (Data) Providers](## Service Providers) .
+The most common use cases for the use of this package are for [Service (Data) Consumers](##service-consumers) and [Service (Data) Providers](##service-providers).
 
 ## Installation
 ```
@@ -19,8 +19,8 @@ builder.Services.AddIshareCoreServices(builder.Configuration);
 Add this configuration to the application environment:
 
 - `ClientId`: Your EORI (for example, `EU.EORI.NL000000002`).
-- `SatelliteId `: The EORI of the dataspace satellite (for example, `EU.EORI.NL000000001`).
-- `SatelliteUrl `: URL of the dataspace satellite.
+- `SatelliteId`: The EORI of the dataspace satellite (for example, `EU.EORI.NL000000001`).
+- `SatelliteUrl`: URL of the dataspace satellite.
 - `AuthorizationRegistryId`: Optional. EORI of the authorization registry (for example, `EU.EORI.NL000000001`).
 - `AuthorizationRegistryUrl`: Optional. URL of the authorization registry.
 
