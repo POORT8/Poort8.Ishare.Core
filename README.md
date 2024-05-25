@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/POORT8/Poort8.Ishare.Core/workflows/Build%20and%20test/badge.svg)](https://github.com/POORT8/Poort8.Ishare.Core/actions) [![Nuget](https://img.shields.io/nuget/v/Poort8.Ishare.Core)](https://www.nuget.org/packages/Poort8.Ishare.Core/)
+[![Actions Status](https://github.com/POORT8/Poort8.Ishare.Core/workflows/Build%20and%20test/badge.svg)](https://github.com/POORT8/Poort8.Ishare.Core/actions) [![Nuget](https://img.shields.io/nuget/v/Poort8.Ishare.Core)](https://www.nuget.org/packages/Poort8.Ishare.Core/) [![codecov](https://codecov.io/gh/POORT8/Poort8.Ishare.Core/graph/badge.svg?token=FTVIUQR1XB)](https://codecov.io/gh/POORT8/Poort8.Ishare.Core)
 
 # Poort8.Ishare.Core
 This .NET library can be used to add iSHARE functionality to your applications. It is used by Poort8 in its applications, undependently reviewed and open sourced under the MPL-2.0 license.
