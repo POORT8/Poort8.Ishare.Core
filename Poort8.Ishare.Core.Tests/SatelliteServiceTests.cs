@@ -27,7 +27,7 @@ public class SatelliteServiceTests
     }
 
     [Fact]
-    public async void GetAccessTokenAtPartyThrowsSatelliteException()
+    public async Task GetAccessTokenAtPartyThrowsSatelliteException()
     {
         var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
         var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();

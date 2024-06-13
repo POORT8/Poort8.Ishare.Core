@@ -28,7 +28,7 @@ public class SchemeOwnerIntegrationTests
     }
 
     [Fact]
-    public async void GetAccessTokenAtPartyReturnsAccessToken()
+    public async Task GetAccessTokenAtPartyReturnsAccessToken()
     {
         var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
         var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
