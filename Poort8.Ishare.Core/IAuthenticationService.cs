@@ -3,5 +3,5 @@
 public interface IAuthenticationService
 {
     Task ValidateClientAssertion(string token, string clientIdHeader);
-    Task ValidateToken(string token, string validIssuer);
+    Task ValidateToken(string token, string validIssuer, bool tokenReplayAllowed = false);
 }

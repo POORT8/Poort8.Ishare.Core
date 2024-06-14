@@ -85,7 +85,7 @@ public class SchemeOwnerIntegrationTests
         var certificateValidator = _serviceProvider.GetRequiredService<ICertificateValidator>();
 
         var clientAssertion = clientAssertionCreator.CreateClientAssertion("aud");
-        
+
         var handler = new JsonWebTokenHandler();
         var decodedToken = handler.ReadJsonWebToken(clientAssertion);
         var chain = AuthenticationService.GetCertificateChain(decodedToken);

@@ -125,4 +125,9 @@ internal class FakeSatelliteService : ISatelliteService
         var fakePartyInfo = partyInfoFaker.Generate();
         return Task.FromResult(fakePartyInfo);
     }
+
+    public Task<PartyInfo> VerifyPartyWithClientAssertion(string partyId, string clientAssertion)
+    {
+        throw new NotImplementedException();
+    }
 }

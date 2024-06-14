@@ -31,7 +31,7 @@ public class AuthorizationRegistryService(
 
             await authenticationService.ValidateToken(delegationResponse!.DelegationToken, options.Value.AuthorizationRegistryId!);
 
-            var delegationEvidence = DecodeDelegationToken(delegationResponse!);
+            var delegationEvidence = DecodeDelegationResponse(delegationResponse!);
 
             logger.LogInformation("Received delegationEvidence from the authorization registry: {delegationEvidence}", JsonSerializer.Serialize(delegationEvidence));
             return delegationEvidence;
@@ -103,6 +103,80 @@ public class AuthorizationRegistryService(
         return permit;
     }
 
+    public async Task<bool> VerifyDelegationTokenPermit(
+        string delegationToken,
+        string validtokenIssuer,
+        string[]? validPolicyIssuer,
+        string[]? validAccessSubject,
+        string[]? validServiceProvider,
+        string[]? validResourceType,
+        string[]? validResourceIdentifier,
+        string[]? validAction,
+        bool tokenReplayAllowed = false)
+    {
+        logger.LogInformation("Verifying delegation token {delegationToken}", delegationToken);
+
+        try
+        {
+            await authenticationService.ValidateToken(delegationToken, validtokenIssuer, tokenReplayAllowed);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning("Delegation evidence token validation failed: {msg}", e.Message);
+            return false;
+        }
+
+        var delegationEvidence = DecodeDelegationToken(delegationToken);
+
+        var policy = delegationEvidence.PolicySets[0].Policies[0];
+
+        if (validPolicyIssuer is not null &&
+            !validPolicyIssuer.Contains(delegationEvidence.PolicyIssuer, StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid policy issuer in delegation evidence, should be {validPolicyIssuer}", validPolicyIssuer);
+            return false;
+        }
+
+        if (validAccessSubject is not null &&
+            !validAccessSubject.Contains(delegationEvidence.Target.AccessSubject, StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid access subject in delegation evidence, should be {validAccessSubject}", validAccessSubject);
+            return false;
+        }
+
+        if (validServiceProvider is not null &&
+            !validServiceProvider.Contains(policy.Target.Environment.ServiceProviders[0], StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid service provider in delegation evidence, should be {validServiceProvider}", validServiceProvider);
+            return false;
+        }
+
+        if (validResourceType is not null &&
+            !validResourceType.Contains(policy.Target.Resource.Type, StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid resource type in delegation evidence, should be {validResourceType}", validResourceType);
+            return false;
+        }
+
+        if (validResourceIdentifier is not null &&
+            !validResourceIdentifier.Contains(policy.Target.Resource.Identifiers[0], StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid resource identifier in delegation evidence, should be {validResourceIdentifier}", validResourceIdentifier);
+            return false;
+        }
+
+        if (validAction is not null &&
+            !validAction.Contains(policy.Target.Actions[0], StringComparer.InvariantCultureIgnoreCase))
+        {
+            logger.LogWarning("Invalid action in delegation evidence, should be {validAction}", validAction);
+            return false;
+        }
+
+        var permit = policy.Rules[0].Effect.Equals("Permit", StringComparison.InvariantCultureIgnoreCase);
+
+        return permit;
+    }
+
     private async Task SetAuthorizationHeader()
     {
         var tokenUrl = GetUrl("connect/token");
@@ -116,11 +190,16 @@ public class AuthorizationRegistryService(
         return new Uri(baseUrl, relativeUrl).AbsoluteUri;
     }
 
-    private static DelegationEvidence DecodeDelegationToken(DelegationResponse token)
+    private static DelegationEvidence DecodeDelegationResponse(DelegationResponse token)
+    {
+        return DecodeDelegationToken(token.DelegationToken);
+    }
+
+    private static DelegationEvidence DecodeDelegationToken(string token)
     {
         var handler = new JsonWebTokenHandler();
 
-        var delegationToken = handler.CanReadToken(token.DelegationToken) ? handler.ReadJsonWebToken(token.DelegationToken) : throw new Exception("CanReadToken fails.");
+        var delegationToken = handler.CanReadToken(token) ? handler.ReadJsonWebToken(token) : throw new Exception("CanReadToken fails.");
 
         return delegationToken.Claims
             .Where(c => c.Type == "delegationEvidence")
