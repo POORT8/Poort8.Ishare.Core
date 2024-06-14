@@ -55,7 +55,24 @@ await authenticationService.ValidateToken("token", "validIssuer");
 ```
 DelegationEvidence evidence = await authorizationRegistryService.GetDelegationEvidence(new DelegationMask());
 
-bool isPermitted = authorizationRegistryService.VerifyDelegationEvidencePermit(delegationEvidence, "validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction");
+bool isPermitted = authorizationRegistryService.VerifyDelegationEvidencePermit(
+	delegationEvidence,
+	"validPolicyIssuer",
+	"validAccessSubject",
+	"validServiceProvider",
+	"validResourceType",
+	"validResourceIdentifier",
+	"validAction");
+
+bool isPermitted = authorizationRegistryService.VerifyDelegationTokenPermit(
+	"delegationToken",
+	"validtokenIssuer",
+	["validPolicyIssuer"],
+	["validAccessSubject"],
+	["validServiceProvider"],
+	["validResourceType"],
+	["validResourceIdentifier"],
+	["validAction"]);
 ```
 
 #### Client Assertion Creator
@@ -69,6 +86,8 @@ string token = clientAssertionCreator.CreateToken("eori", claims);
 #### Satellite Service
 ```
 PartyInfo partyInfo = await satelliteService.VerifyParty("eori", "certificateThumbprint");
+
+PartyInfo partyInfo = await satelliteService.VerifyPartyWithClientAssertion("eori", "clientAssertion");
 
 IEnumerable<TrustedListAuthority> trustedList = await satelliteService.GetValidTrustedList();
 ```
