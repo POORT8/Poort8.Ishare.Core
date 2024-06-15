@@ -26,12 +26,7 @@ public class IntegrationTests
     [Fact]
     public async Task GetAccessTokenAtPartyReturnsAccessToken()
     {
-        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
-        var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
-
-        var tokenUrl = $"{options.Value.SatelliteUrl}/connect/token";
-        var accessToken = await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
-
+        var accessToken = await GetAccessToken();
         accessToken.Should().NotBeNullOrEmpty();
     }
 
@@ -54,6 +49,21 @@ public class IntegrationTests
         var partyInfo = await satelliteService.VerifyParty(
             options.Value.SatelliteId,
             "145dd7c41a2f9b989f16f1250c5a9291094c300590db01903efe1fb1de651b48");
+
+        partyInfo.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GetVerifyPartyWithClientAssertionReturnsValidParty()
+    {
+        var satelliteService = _serviceProvider.GetRequiredService<ISatelliteService>();
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+
+        var token = await GetAccessToken();
+
+        var partyInfo = await satelliteService.VerifyPartyWithClientAssertion(
+            options.Value.SatelliteId,
+            token);
 
         partyInfo.Should().NotBeNull();
     }
@@ -85,6 +95,15 @@ public class IntegrationTests
         var signingCertificate = await certificateValidator.ValidateX5cChain(chain);
 
         signingCertificate.Should().BeOfType<X509Certificate2>();
+    }
+
+    private async Task<string> GetAccessToken()
+    {
+        var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
+        var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
+
+        var tokenUrl = $"{options.Value.SatelliteUrl}/connect/token";
+        return await accessTokenService.GetAccessTokenAtParty(options.Value.SatelliteId, tokenUrl);
     }
 
     //TODO: GetDelegationEvidence and VerifyDelegationEvidencePermit

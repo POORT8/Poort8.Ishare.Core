@@ -92,4 +92,26 @@ public class AuthenticationServiceTests
 
         await act.Should().ThrowAsync<Exception>();
     }
+
+    [Fact]
+    public async Task ValidateTokenWithTokenReplayAllowedShouldPass()
+    {
+        var token = _clientAssertionCreator.CreateClientAssertion("serviceProvider");
+
+        Func<Task> act = () => _authenticationService.ValidateToken(token, "serviceProvider", true);
+
+        await act.Should().NotThrowAsync();
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ValidateTokenWithTokenReplayNotAllowedShouldFail()
+    {
+        var token = _clientAssertionCreator.CreateClientAssertion("serviceProvider");
+
+        Func<Task> act = () => _authenticationService.ValidateToken(token, "serviceProvider", false);
+
+        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<Exception>();
+    }
 }
