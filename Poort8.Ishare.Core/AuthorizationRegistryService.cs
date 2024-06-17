@@ -54,6 +54,8 @@ public class AuthorizationRegistryService(
     {
         logger.LogInformation("Verifying delegation evidence {delegationEvidence}", JsonSerializer.Serialize(delegationEvidence));
 
+        if (VerifyLifetime(logger, delegationEvidence) == false) return false;
+
         var policy = delegationEvidence.PolicySets[0].Policies[0];
 
         if (validPolicyIssuer is not null &&
@@ -127,6 +129,8 @@ public class AuthorizationRegistryService(
         }
 
         var delegationEvidence = DecodeDelegationToken(delegationToken);
+
+        if (VerifyLifetime(logger, delegationEvidence) == false) return false;
 
         var policy = delegationEvidence.PolicySets[0].Policies[0];
 
@@ -205,6 +209,19 @@ public class AuthorizationRegistryService(
             .Where(c => c.Type == "delegationEvidence")
             .Select(c => JsonSerializer.Deserialize<DelegationEvidence>(c.Value))
             .First()!;
+    }
+
+    private static bool VerifyLifetime(ILogger<AuthorizationRegistryService> logger, DelegationEvidence delegationEvidence)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (delegationEvidence.NotBefore >= now ||
+            delegationEvidence.NotOnOrAfter < now)
+        {
+            logger.LogWarning("Invalid token lifetime, notBefore {notBefore} or notOnOrAfter {NotOnOrAfter} is not valid: now {now}", delegationEvidence.NotBefore, delegationEvidence.NotOnOrAfter, now);
+            return false;
+        }
+
+        return true;
     }
 
     public record DelegationResponse(

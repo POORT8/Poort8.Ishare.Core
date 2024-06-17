@@ -70,6 +70,23 @@ public class AuthorizationRegistryServiceTests
     }
 
     [Fact]
+    public void VerifyInvalidLifetimeShouldFail()
+    {
+        var fakeDelegationEvidence = CreateFakeDelegationEvidence(invalidLifetime: true);
+
+        var permit = _authorizationRegistryService.VerifyDelegationEvidencePermit(
+            fakeDelegationEvidence,
+            fakeDelegationEvidence.PolicyIssuer,
+            fakeDelegationEvidence.Target.AccessSubject,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Environment.ServiceProviders[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Type,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Identifiers[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Actions[0]);
+
+        permit.Should().BeFalse();
+    }
+
+    [Fact]
     public void VerifyDelegationEvidencePermit_ValidConditions_ShouldPass()
     {
         var fakeDelegationEvidence = CreateFakeDelegationEvidence(
@@ -189,6 +206,82 @@ public class AuthorizationRegistryServiceTests
         result.Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", true)]
+    [InlineData("invalidPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "invalidAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "invalidServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "invalidResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "invalidResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "invalidAction", false)]
+    public async Task VerifyDelegationTokenPermit_VariousConditions_ShouldReturnExpectedResult(
+        string policyIssuer,
+        string accessSubject,
+        string serviceProvider,
+        string resourceType,
+        string resourceIdentifier,
+        string action,
+        bool expectedResult)
+    {
+        var fakeDelegationEvidence = CreateFakeDelegationEvidence(
+        policyIssuer: "validPolicyIssuer",
+        accessSubject: "validAccessSubject",
+        serviceProvider: "validServiceProvider",
+        resourceType: "validResourceType",
+        resourceIdentifier: "validResourceIdentifier",
+        action: "validAction");
+        var fakeDelegationToken = CreateFakeDelegationToken(fakeDelegationEvidence);
+
+        var result = await _authorizationRegistryService.VerifyDelegationTokenPermit(
+            fakeDelegationToken,
+            _options.Value.ClientId,
+            [policyIssuer],
+            [accessSubject],
+            [serviceProvider],
+            [resourceType],
+            [resourceIdentifier],
+            [action]);
+
+        result.Should().Be(expectedResult);
+    }
+
+    [Theory]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", true)]
+    [InlineData("invalidPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "invalidAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "invalidServiceProvider", "validResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "invalidResourceType", "validResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "invalidResourceIdentifier", "validAction", false)]
+    [InlineData("validPolicyIssuer", "validAccessSubject", "validServiceProvider", "validResourceType", "validResourceIdentifier", "invalidAction", false)]
+    public void VerifyDelegationEvidencePermit_VariousConditions_ShouldReturnExpectedResult(
+    string policyIssuer,
+    string accessSubject,
+    string serviceProvider,
+    string resourceType,
+    string resourceIdentifier,
+    string action,
+    bool expectedResult)
+    {
+        var fakeDelegationEvidence = CreateFakeDelegationEvidence(
+            policyIssuer: "validPolicyIssuer",
+            accessSubject: "validAccessSubject",
+            serviceProvider: "validServiceProvider",
+            resourceType: "validResourceType",
+            resourceIdentifier: "validResourceIdentifier",
+            action: "validAction");
+
+        var result = _authorizationRegistryService.VerifyDelegationEvidencePermit(
+            fakeDelegationEvidence,
+            policyIssuer,
+            accessSubject,
+            serviceProvider,
+            resourceType,
+            resourceIdentifier,
+            action);
+
+        result.Should().Be(expectedResult);
+    }
+
     private string CreateFakeDelegationToken(DelegationEvidence delegationEvidence)
     {
         var claims = new List<Claim>
@@ -204,7 +297,8 @@ public class AuthorizationRegistryServiceTests
         string serviceProvider = "defaultServiceProvider",
         string resourceType = "defaultResourceType",
         string resourceIdentifier = "defaultResourceIdentifier",
-        string action = "defaultAction")
+        string action = "defaultAction",
+        bool invalidLifetime = false)
     {
         var serviceProviderEnvironmentFaker = new Faker<ServiceProviderEnvironment>()
             .CustomInstantiator(f => new ServiceProviderEnvironment(
@@ -247,10 +341,13 @@ public class AuthorizationRegistryServiceTests
         var accessSubjectTargetFaker = new Faker<AccessSubjectTarget>()
             .CustomInstantiator(f => new AccessSubjectTarget(accessSubject));
 
+        var nbf = DateTimeOffset.UtcNow.AddSeconds(-10).ToUnixTimeSeconds();
+        if (invalidLifetime) nbf = DateTimeOffset.UtcNow.AddSeconds(10).ToUnixTimeSeconds();
+
         var delegationEvidenceFaker = new Faker<DelegationEvidence>()
             .CustomInstantiator(f => new DelegationEvidence(
-                1,
-                2,
+                nbf,
+                DateTimeOffset.UtcNow.AddSeconds(10).ToUnixTimeSeconds(),
                 policyIssuer,
                 accessSubjectTargetFaker.Generate(),
                 new List<PolicySet> { policySetFaker.Generate() }.AsReadOnly()));
