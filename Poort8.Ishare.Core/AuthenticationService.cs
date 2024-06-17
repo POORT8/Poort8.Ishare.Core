@@ -22,7 +22,7 @@ public class AuthenticationService(
         await ValidateToken(token, clientIdHeader);
     }
 
-    public async Task ValidateToken(string token, string validIssuer)
+    public async Task ValidateToken(string token, string validIssuer, bool tokenReplayAllowed = false)
     {
         try
         {
@@ -54,6 +54,8 @@ public class AuthenticationService(
                 ValidateTokenReplay = true,
                 TokenReplayCache = tokenReplayCache
             };
+
+            if (tokenReplayAllowed) tokenValidationParameters.ValidateTokenReplay = false;
 
             var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 

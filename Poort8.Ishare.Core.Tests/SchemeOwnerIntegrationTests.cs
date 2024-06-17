@@ -28,7 +28,7 @@ public class SchemeOwnerIntegrationTests
     }
 
     [Fact]
-    public async void GetAccessTokenAtPartyReturnsAccessToken()
+    public async Task GetAccessTokenAtPartyReturnsAccessToken()
     {
         var options = _serviceProvider.GetRequiredService<IOptions<IshareCoreOptions>>();
         var accessTokenService = _serviceProvider.GetRequiredService<IAccessTokenService>();
@@ -85,7 +85,7 @@ public class SchemeOwnerIntegrationTests
         var certificateValidator = _serviceProvider.GetRequiredService<ICertificateValidator>();
 
         var clientAssertion = clientAssertionCreator.CreateClientAssertion("aud");
-        
+
         var handler = new JsonWebTokenHandler();
         var decodedToken = handler.ReadJsonWebToken(clientAssertion);
         var chain = AuthenticationService.GetCertificateChain(decodedToken);

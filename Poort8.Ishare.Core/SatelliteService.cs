@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Poort8.Ishare.Core.Models;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
@@ -81,6 +82,17 @@ public class SatelliteService(
         });
 
         return partyInfo;
+    }
+
+    public async Task<PartyInfo> VerifyPartyWithClientAssertion(string partyId, string clientAssertion)
+    {
+        var handler = new JsonWebTokenHandler();
+        var decodedToken = handler.CanReadToken(clientAssertion) ? handler.ReadJsonWebToken(clientAssertion) : throw new Exception("CanReadToken fails.");
+        var chain = AuthenticationService.GetCertificateChain(decodedToken);
+        var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain.First()));
+        var thumbprint = CertificateProvider.GetSha256Thumbprint(signingCertificate);
+
+        return await VerifyParty(partyId, thumbprint);
     }
 
     private PartyInfo CheckPartyProperties(IEnumerable<PartyInfo> partyInfos, string certificateThumbprint)
@@ -173,7 +185,7 @@ public class SatelliteService(
     }
 
     private async Task SetAuthorizationHeader()
-    {   
+    {
         var tokenUrl = GetUrl("connect/token");
         string token;
         try
@@ -185,7 +197,7 @@ public class SatelliteService(
             logger.LogError("HttpRequestException - Could not get access token from satellite: {msg}", e.Message);
             throw new SatelliteException($"HttpRequestException - Could not get access token from satellite: {e.Message}", e);
         }
-        
+
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 

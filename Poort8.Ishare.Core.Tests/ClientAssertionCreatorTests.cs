@@ -43,7 +43,7 @@ public class ClientAssertionCreatorTests
     [Fact]
     public async Task CreateTokenShouldReturnValidToken()
     {
-        var claims = new List<Claim>{ new("delegation_token", "ey...") };
+        var claims = new List<Claim> { new("delegation_token", "ey...") };
         var token = _clientAssertionCreator.CreateToken("aud", claims);
 
         token.Should().NotBeNullOrEmpty();
