@@ -58,6 +58,15 @@ public class AuthenticationService(
             if (tokenReplayAllowed) tokenValidationParameters.ValidateTokenReplay = false;
 
             var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
+            if (validationResult.IsValid == false)
+            {
+                logger.LogError(
+                    "Token validation error, for valid issuer {validIssuer} and token {token}. With message: {msg}",
+                    validIssuer,
+                    token,
+                    validationResult.Exception?.Message);
+                throw validationResult.Exception ?? new Exception("Token validation failed");
+            }
 
             ValidateIssAndSub(token, validIssuer, validationResult);
             ValidateIatAndExp(token, validIssuer, validationResult);

@@ -179,7 +179,12 @@ public class SatelliteService(
             RequireSignedTokens = true,
         };
 
-        await handler.ValidateTokenAsync(token, tokenValidationParameters);
+        var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
+        if (validationResult.IsValid == false)
+        {
+            logger.LogError("Satellite token validation error: {msg}", validationResult.Exception?.Message);
+            throw validationResult.Exception ?? new Exception("Satellite token validation failed");
+        }
 
         return handler.ReadJsonWebToken(token);
     }
