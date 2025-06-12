@@ -22,7 +22,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal --configuration Release -- --filter-not-class "*SchemeOwnerIntegrationTests" --filter-not-class "*IntegrationTests" --filter-not-class "*SatelliteServiceTests"
     - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1
+      uses: nuget/setup-nuget@v2
       with:
         nuget-version: latest
         nuget-api-key: ${{secrets.NUGET_API_KEY}}
