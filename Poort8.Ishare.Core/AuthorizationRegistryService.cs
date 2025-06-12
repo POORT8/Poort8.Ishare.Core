@@ -214,8 +214,8 @@ public class AuthorizationRegistryService(
     private static bool VerifyLifetime(ILogger<AuthorizationRegistryService> logger, DelegationEvidence delegationEvidence)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (delegationEvidence.NotBefore >= now ||
-            delegationEvidence.NotOnOrAfter < now)
+        if (delegationEvidence.NotBefore > now ||
+            delegationEvidence.NotOnOrAfter <= now)
         {
             logger.LogWarning("Invalid token lifetime, notBefore {notBefore} or notOnOrAfter {NotOnOrAfter} is not valid: now {now}", delegationEvidence.NotBefore, delegationEvidence.NotOnOrAfter, now);
             return false;

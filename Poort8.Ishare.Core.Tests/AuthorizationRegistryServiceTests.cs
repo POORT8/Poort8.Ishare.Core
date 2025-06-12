@@ -87,6 +87,50 @@ public class AuthorizationRegistryServiceTests
     }
 
     [Fact]
+    public void VerifyDelegationEvidencePermit_NotBeforeEqualNow_ShouldPass()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var fakeDelegationEvidence = CreateFakeDelegationEvidence() with
+        {
+            NotBefore = now,
+            NotOnOrAfter = now + 10
+        };
+
+        var permit = _authorizationRegistryService.VerifyDelegationEvidencePermit(
+            fakeDelegationEvidence,
+            fakeDelegationEvidence.PolicyIssuer,
+            fakeDelegationEvidence.Target.AccessSubject,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Environment.ServiceProviders[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Type,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Identifiers[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Actions[0]);
+
+        permit.Should().BeTrue();
+    }
+
+    [Fact]
+    public void VerifyDelegationEvidencePermit_NotOnOrAfterEqualNow_ShouldFail()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var fakeDelegationEvidence = CreateFakeDelegationEvidence() with
+        {
+            NotBefore = now - 10,
+            NotOnOrAfter = now
+        };
+
+        var permit = _authorizationRegistryService.VerifyDelegationEvidencePermit(
+            fakeDelegationEvidence,
+            fakeDelegationEvidence.PolicyIssuer,
+            fakeDelegationEvidence.Target.AccessSubject,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Environment.ServiceProviders[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Type,
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Resource.Identifiers[0],
+            fakeDelegationEvidence.PolicySets[0].Policies[0].Target.Actions[0]);
+
+        permit.Should().BeFalse();
+    }
+
+    [Fact]
     public void VerifyDelegationEvidencePermit_ValidConditions_ShouldPass()
     {
         var fakeDelegationEvidence = CreateFakeDelegationEvidence(
