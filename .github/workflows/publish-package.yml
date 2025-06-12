@@ -3,7 +3,7 @@ name: Publish to NuGet
 on:
   release:
     types: [published]
-      
+
 jobs:
   publish:
     name: Build, pack & publish
@@ -24,10 +24,7 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal --configuration Release -- \
-          --filter-not-class "*SchemeOwnerIntegrationTests" \
-          --filter-not-class "*IntegrationTests" \
-          --filter-not-class "*SatelliteServiceTests"
+        run: dotnet test --no-build --verbosity normal --configuration Release -- --filter-not-class "*SchemeOwnerIntegrationTests" --filter-not-class "*IntegrationTests" --filter-not-class "*SatelliteServiceTests"
 
       - name: Extract version
         run: |
@@ -35,11 +32,7 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Pack package
-        run: dotnet pack Poort8.Ishare.Core/Poort8.Ishare.Core.csproj \
-          --configuration Release \
-          -p:IncludeSymbols=true \
-          -p:SymbolPackageFormat=snupkg \
-          -p:PackageVersion=${{ env.VERSION }}
+        run: dotnet pack Poort8.Ishare.Core/Poort8.Ishare.Core.csproj --configuration Release -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -p:PackageVersion=${{ env.VERSION }}
 
       - name: Publish to NuGet
         run: dotnet nuget push "**/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
