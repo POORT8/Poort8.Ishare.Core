@@ -164,6 +164,11 @@ public class SatelliteService(
     {
         var handler = new JsonWebTokenHandler { MaximumTokenSizeInBytes = 1024 * 1024 * 2 };
 
+        var jsonWebToken = handler.ReadJsonWebToken(token);
+        var chain = AuthenticationService.GetCertificateChain(jsonWebToken);
+        var signingCertificate = new X509Certificate2(Convert.FromBase64String(chain[0]));
+        var signingKey = new X509SecurityKey(signingCertificate);
+
         //NOTE: As we trust the satellite and get the tokens from a predefined url over HTTPS we only do basic token validation.
         var tokenValidationParameters = new TokenValidationParameters()
         {
@@ -177,11 +182,19 @@ public class SatelliteService(
             RequireExpirationTime = true,
             ClockSkew = TimeSpan.FromSeconds(10),
             RequireSignedTokens = true,
+            IssuerSigningKey = signingKey,
+            ValidateIssuerSigningKey = true
         };
 
-        await handler.ValidateTokenAsync(token, tokenValidationParameters);
+        var validationResult = await handler.ValidateTokenAsync(token, tokenValidationParameters);
+        if (validationResult.IsValid == false)
+        {
+            logger.LogError("Satellite token validation error: {msg}", validationResult.Exception?.Message);
+            throw validationResult.Exception ?? new Exception("Satellite token validation failed");
+        }
 
-        return handler.ReadJsonWebToken(token);
+        logger.LogInformation("Satellite token validation successful");
+        return jsonWebToken;
     }
 
     private async Task SetAuthorizationHeader()
