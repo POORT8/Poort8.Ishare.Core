@@ -20,7 +20,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
     - name: Test
-      run: dotnet test --no-build --verbosity normal --configuration Release --filter 'FullyQualifiedName!~Poort8.Ishare.Core.Tests.SchemeOwnerIntegrationTests&FullyQualifiedName!~Poort8.Ishare.Core.Tests.IntegrationTests&FullyQualifiedName!~Poort8.Ishare.Core.Tests.SatelliteServiceTests'
+      run: dotnet test --no-build --verbosity normal -- --filter-not-class "*SchemeOwnerIntegrationTests" --filter-not-class "*IntegrationTests" --filter-not-class "*SatelliteServiceTests"
     - name: Setup NuGet
       uses: NuGet/setup-nuget@v1
       with:
