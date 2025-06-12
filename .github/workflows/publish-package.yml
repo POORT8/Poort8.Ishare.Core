@@ -34,7 +34,7 @@ jobs:
       run: dotnet pack Poort8.Ishare.Core/Poort8.Ishare.Core.csproj --configuration Release -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -p:PackageVersion=${{env.VERSION}}
     - name: Publish to NuGet
       run: dotnet nuget push **/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       name: Publish to GitHub
       with:
         name: Poort8.Ishare.Core.${{github.event.release.tag_name}}
