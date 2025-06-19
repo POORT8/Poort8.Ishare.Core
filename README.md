@@ -319,6 +319,10 @@ bool isAuthorized = authorizationRegistryService.VerifyDelegationEvidencePermit(
 
 **Delegation Evidence**: Following [iSHARE M2M authorization patterns](https://trustbok.ishare.eu/apply-ishare/authorisation), the **preferred approach** is for Service Providers to fetch and validate delegation evidence themselves rather than relying on Service Consumers to provide it. This provides better security and control over authorization decisions.
 
+### Implementation Guide
+
+For a step-by-step tutorial on building a Service Provider with ASP.NET Core Minimal API, see our [Service Provider Implementation Guide](docs/service-provider-guide.md).
+
 ## Service Consumers
 
 **You're a Service Consumer if**: You want to call other companies' APIs to get their data.
