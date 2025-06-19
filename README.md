@@ -329,6 +329,10 @@ For a step-by-step tutorial on building a Service Provider with ASP.NET Core Min
 
 For complete implementation scenarios and workflows, see [Service Consumer Role](https://dev.ishare.eu/service-consumer-role/getting-started).
 
+### Implementation Guide
+
+For a step-by-step tutorial on building a Service Consumer with ASP.NET Core Minimal API, see our [Service Consumer Implementation Guide](docs/service-consumer-guide.md).
+
 ### Basic Flow
 
 ```csharp
