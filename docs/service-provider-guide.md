@@ -112,7 +112,7 @@ app.MapGet("/api/energy/{ean}", async (
     try
     {
         // Step 1: Validate access token
-        var authHeader = context.Request.Headers.Authorization.ToString();
+        var authHeader = context.Request.Headers["Authorization"];
         if (!authHeader.StartsWith("Bearer "))
             return Results.Unauthorized();
 
