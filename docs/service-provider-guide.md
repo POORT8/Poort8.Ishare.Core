@@ -117,7 +117,7 @@ app.MapGet("/api/energy/{ean}", async (
             return Results.Unauthorized();
 
         var token = authHeader["Bearer ".Length..];
-        await authService.ValidateToken(token, "EU.EORI.NL000000001");
+        await authService.ValidateToken(token, SERVICE_PROVIDER_EORI);
 
         // Step 2: Extract client ID from token (simplified - in production, decode JWT properly)
         var tokenBytes = Convert.FromBase64String(token);
