@@ -8,6 +8,18 @@ A .NET library for implementing iSHARE Trust Framework functionality in your app
 
 For more information about iSHARE, visit the [iSHARE Developer Portal](https://dev.ishare.eu/).
 
+## Open Source & Support
+
+This package is **open sourced by Poort8** to facilitate others in connecting to iSHARE data spaces. 
+
+**Important notes:**
+- Poort8 actively uses this package themselves and updates it when they need new features or fixes
+- **Bugs, feature requests, and questions**: Submit them via [GitHub Issues](https://github.com/POORT8/Poort8.Ishare.Core/issues) only
+- **No official support**: Poort8 does not provide support and gives no commitments on bug fixes
+- **Community support only**: The community may help, but there are no guarantees or SLAs
+
+If you need guaranteed support or specific features, consider contributing to the project or forking it for your own needs.
+
 ## Key iSHARE Concepts
 
 This package helps you implement iSHARE functionality for secure data sharing in data ecosystems. For a complete understanding of iSHARE concepts and workflows, please refer to the [iSHARE Getting Started Guide](https://dev.ishare.eu/introduction/getting-started).
